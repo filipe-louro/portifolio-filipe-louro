@@ -7,11 +7,13 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Send, CheckCircle2, Loader2 } from "lucide-react";
 
+const PROJECT_TYPES = ["web", "mobile", "landing"] as const;
+
 const formSchema = z.object({
     name: z.string().min(2, "Nome muito curto"),
     email: z.string().email("Email inválido"),
-    projectType: z.enum(["web", "mobile", "landing"], {
-        errorMap: () => ({ message: "Selecione um tipo de projeto" }),
+    projectType: z.enum(PROJECT_TYPES, {
+        message: "Selecione um tipo de projeto",
     }),
     message: z.string().min(10, "Conte-nos um pouco mais sobre o projeto"),
 });

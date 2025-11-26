@@ -106,7 +106,7 @@ const KEY_LAYOUT = [
 const KeyboardApp = ({ config, setConfig }: { config: RGBConfig, setConfig: React.Dispatch<React.SetStateAction<RGBConfig>> }) => {
     const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
     const keyRefs = useRef<Map<string, { el: HTMLDivElement, label: string }>>(new Map());
-    const requestRef = useRef<number>();
+    const requestRef = useRef<number>(0);
     const timeRef = useRef(0);
     const ripplesRef = useRef<{ key: string, x: number, y: number, time: number }[]>([]);
 
