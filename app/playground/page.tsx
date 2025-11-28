@@ -94,6 +94,24 @@ export default function PlaygroundPage() {
                             </div>
                         </SpotlightCard>
                     </Link>
+
+                    {/* Matrix Rain */}
+                    <Link href="/playground/matrix">
+                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-green-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
+                            <div>
+                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-green-400">
+                                    <span className="font-mono text-xl font-bold">ｵ</span>
+                                </div>
+                                <h2 className="text-xl font-bold text-white mb-2">Matrix Digital Rain</h2>
+                                <p className="text-slate-400 text-sm">
+                                    Chuva de códigos procedurais com efeito de profundidade 3D (Parallax) e renderização otimizada.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-green-400 text-sm font-medium mt-4">
+                                Hack the Mainframe <ArrowRight size={16} className="ml-2" />
+                            </div>
+                        </SpotlightCard>
+                    </Link>
                 </div>
             </div>
         </div>

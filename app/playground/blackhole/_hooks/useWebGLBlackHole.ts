@@ -72,7 +72,6 @@ export const useWebGLBlackHole = (canvasRef: RefObject<HTMLCanvasElement | null>
         const resolutionLocation = gl.getUniformLocation(program, "u_resolution");
         const timeLocation = gl.getUniformLocation(program, "u_time");
 
-        // --- Render Loop ---
         let animationFrameId: number;
         const startTime = performance.now();
 
@@ -85,6 +84,17 @@ export const useWebGLBlackHole = (canvasRef: RefObject<HTMLCanvasElement | null>
             if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
                 canvas.width = displayWidth;
                 canvas.height = displayHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+
+            const isMobile = window.innerWidth < 768;
+            const dpr = isMobile ? Math.min(window.devicePixelRatio, 0.5) : window.devicePixelRatio;
+
+            const needResize = canvas.width !== displayWidth * dpr || canvas.height !== displayHeight * dpr;
+
+            if (needResize) {
+                canvas.width = displayWidth * dpr;
+                canvas.height = displayHeight * dpr;
                 gl.viewport(0, 0, canvas.width, canvas.height);
             }
 
@@ -102,7 +112,6 @@ export const useWebGLBlackHole = (canvasRef: RefObject<HTMLCanvasElement | null>
 
         animationFrameId = requestAnimationFrame(render);
 
-        // --- Cleanup ---
         return () => {
             cancelAnimationFrame(animationFrameId);
             if (gl) {

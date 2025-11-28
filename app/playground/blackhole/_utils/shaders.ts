@@ -116,17 +116,15 @@ export const fragmentShaderSource = `#version 300 es
       
       float dens = getDiskDensity(pos);
       if(dens > 0.001) {
-        float temp = 1.0 / (d * 0.3); 
+       float temp = 1.0 / (d * 0.3); 
         vec3 baseFireColor = mix(vec3(1.0, 0.4, 0.1), vec3(0.9, 0.9, 1.0), temp * temp * 0.5);
-        
         float doppler = 1.0 + dot(normalize(pos), vec3(1.0, 0.0, 0.0)) * 0.6;
-
         vec3 sampleCol = dens * baseFireColor * 0.08 * doppler;
         
         col += sampleCol * (1.0 - totalDensity); 
         totalDensity += dens * 0.08;
         
-        if(totalDensity > 1.0) break;
+        if(totalDensity > 0.98) break;
       }
       
       glow += 0.01 / (d*d + 0.5);
