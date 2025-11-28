@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Keyboard, ArrowRight, Zap, Mountain } from 'lucide-react';
+import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed } from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/spotlight-card';
 
 export default function PlaygroundPage() {
@@ -13,7 +13,7 @@ export default function PlaygroundPage() {
 
             <div className="fixed top-1/4 left-10 w-24 h-24 border border-white/5 rounded-2xl rotate-12 backdrop-blur-sm pointer-events-none" />
 
-            <div className="relative z-10 pt-24 px-6 max-w-6xl mx-auto">
+            <div className="relative z-10 pt-24 px-6 max-w-6xl mx-auto pb-20">
                 <motion.h1
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -23,6 +23,7 @@ export default function PlaygroundPage() {
                 </motion.h1>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* RGB Keyboard */}
                     <Link href="/playground/keyboard">
                         <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-cyan-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
                             <div>
@@ -40,10 +41,29 @@ export default function PlaygroundPage() {
                         </SpotlightCard>
                     </Link>
 
-                    <Link href="/playground/explosion">
-                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-cyan-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
+                    {/* Black Hole */}
+                    <Link href="/playground/blackhole">
+                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-orange-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
                             <div>
-                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-cyan-400">
+                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-orange-400">
+                                    <CircleDashed size={24} className="animate-spin-slow" />
+                                </div>
+                                <h2 className="text-xl font-bold text-white mb-2">Interstellar Gargantua</h2>
+                                <p className="text-slate-400 text-sm">
+                                    Simulação física de um buraco negro utilizando Raymarching e WebGL 2.0.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-orange-400 text-sm font-medium mt-4">
+                                Entrar no Horizonte <ArrowRight size={16} className="ml-2" />
+                            </div>
+                        </SpotlightCard>
+                    </Link>
+
+                    {/* Particle Physics */}
+                    <Link href="/playground/explosion">
+                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-yellow-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
+                            <div>
+                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-yellow-400">
                                     <Zap size={24} />
                                 </div>
                                 <h2 className="text-xl font-bold text-white mb-2">Particle Text Physics</h2>
@@ -51,12 +71,13 @@ export default function PlaygroundPage() {
                                     Manipulação de pixels via Canvas API com física de repulsão e reconstrução em tempo real.
                                 </p>
                             </div>
-                            <div className="flex items-center text-cyan-400 text-sm font-medium mt-4">
+                            <div className="flex items-center text-yellow-400 text-sm font-medium mt-4">
                                 Testar Componente <ArrowRight size={16} className="ml-2" />
                             </div>
                         </SpotlightCard>
                     </Link>
 
+                    {/* Vaporwave */}
                     <Link href="/playground/vaporwave">
                         <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-fuchsia-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
                             <div>

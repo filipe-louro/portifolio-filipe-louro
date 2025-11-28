@@ -10,6 +10,7 @@ const EXPERIMENT_NAMES: Record<string, string> = {
     keyboard: "RGB Keyboard",
     explosion: "Particle Physics",
     vaporwave: "Retro Vaporwave",
+    blackhole: "Interstellar Gargantua",
 };
 
 export const Navbar = () => {
@@ -22,6 +23,7 @@ export const Navbar = () => {
 
     const isLab = pathname.startsWith("/playground");
     const pathSegments = pathname.split("/").filter(Boolean);
+    // Pega o segundo segmento (/playground/x)
     const currentExperimentSlug = pathSegments[1];
     const experimentName = EXPERIMENT_NAMES[currentExperimentSlug];
 
