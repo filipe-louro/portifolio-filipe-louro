@@ -11,6 +11,7 @@ const EXPERIMENT_NAMES: Record<string, string> = {
     explosion: "Particle Physics",
     vaporwave: "Retro Vaporwave",
     blackhole: "Interstellar Gargantua",
+    matrix: 'Matrix Effect'
 };
 
 export const Navbar = () => {
