@@ -13,6 +13,7 @@ const EXPERIMENT_NAMES: Record<string, string> = {
     blackhole: "Interstellar Gargantua",
     matrix: "Matrix Effect",
     orbit: "Orbital Field",
+    neon: "Neon Generator",
 };
 
 export const Navbar = () => {

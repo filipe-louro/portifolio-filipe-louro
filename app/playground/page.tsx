@@ -130,6 +130,23 @@ export default function PlaygroundPage() {
                             </div>
                         </SpotlightCard>
                     </Link>
+
+                    <Link href="/playground/neon">
+                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-pink-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
+                            <div>
+                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-pink-400">
+                                    <span className="font-bold text-lg border-2 border-pink-400 rounded px-1">Ne</span>
+                                </div>
+                                <h2 className="text-xl font-bold text-white mb-2">Neon Sign Generator</h2>
+                                <p className="text-slate-400 text-sm">
+                                    Gerador de letreiros neon realista com efeitos de luz CSS3 e simulação de eletricidade.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-pink-400 text-sm font-medium mt-4">
+                                Customizar Placa <ArrowRight size={16} className="ml-2" />
+                            </div>
+                        </SpotlightCard>
+                    </Link>
                 </div>
             </div>
         </div>
