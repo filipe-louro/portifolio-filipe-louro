@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed } from 'lucide-react';
+import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom } from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/spotlight-card';
 
 export default function PlaygroundPage() {
@@ -41,6 +41,24 @@ export default function PlaygroundPage() {
                         </SpotlightCard>
                     </Link>
 
+                    {/* Orbital Field */}
+                    <Link href="/playground/orbit">
+                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-blue-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
+                            <div>
+                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-blue-400">
+                                    <Atom size={24} className="animate-spin-slow" />
+                                </div>
+                                <h2 className="text-xl font-bold text-white mb-2">Orbital Field Simulator</h2>
+                                <p className="text-slate-400 text-sm">
+                                    Simulador de partículas interativo com campos gravitacionais e eletromagnéticos.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-blue-400 text-sm font-medium mt-4">
+                                Iniciar Simulação <ArrowRight size={16} className="ml-2" />
+                            </div>
+                        </SpotlightCard>
+                    </Link>
+
                     {/* Black Hole */}
                     <Link href="/playground/blackhole">
                         <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-orange-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
@@ -55,6 +73,24 @@ export default function PlaygroundPage() {
                             </div>
                             <div className="flex items-center text-orange-400 text-sm font-medium mt-4">
                                 Entrar no Horizonte <ArrowRight size={16} className="ml-2" />
+                            </div>
+                        </SpotlightCard>
+                    </Link>
+
+                    {/* Matrix Rain */}
+                    <Link href="/playground/matrix">
+                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-green-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
+                            <div>
+                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-green-400">
+                                    <span className="font-mono text-xl font-bold">ｵ</span>
+                                </div>
+                                <h2 className="text-xl font-bold text-white mb-2">Matrix Digital Rain</h2>
+                                <p className="text-slate-400 text-sm">
+                                    Chuva de códigos procedurais com efeito de profundidade 3D (Parallax) e renderização otimizada.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-green-400 text-sm font-medium mt-4">
+                                Hack the Mainframe <ArrowRight size={16} className="ml-2" />
                             </div>
                         </SpotlightCard>
                     </Link>
@@ -91,24 +127,6 @@ export default function PlaygroundPage() {
                             </div>
                             <div className="flex items-center text-fuchsia-400 text-sm font-medium mt-4">
                                 Testar Componente <ArrowRight size={16} className="ml-2" />
-                            </div>
-                        </SpotlightCard>
-                    </Link>
-
-                    {/* Matrix Rain */}
-                    <Link href="/playground/matrix">
-                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-green-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
-                            <div>
-                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-green-400">
-                                    <span className="font-mono text-xl font-bold">ｵ</span>
-                                </div>
-                                <h2 className="text-xl font-bold text-white mb-2">Matrix Digital Rain</h2>
-                                <p className="text-slate-400 text-sm">
-                                    Chuva de códigos procedurais com efeito de profundidade 3D (Parallax) e renderização otimizada.
-                                </p>
-                            </div>
-                            <div className="flex items-center text-green-400 text-sm font-medium mt-4">
-                                Hack the Mainframe <ArrowRight size={16} className="ml-2" />
                             </div>
                         </SpotlightCard>
                     </Link>
