@@ -50,11 +50,11 @@ export const ContactForm = () => {
                     className="pt-10"
                 >
                     <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-                        Let's build something <br />
+                        Let&#39;s build something <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">extraordinary.</span>
                     </h2>
                     <p className="text-slate-400 text-lg mb-12 max-w-lg">
-                        Have a project in mind? Whether it's a complex SaaS platform, an e-commerce solution, or a high-performance web app, I'm ready to help you architect it. [cite: 41, 48]
+                        Have a project in mind? Whether it&#39;s a complex SaaS platform, an e-commerce solution, or a high-performance web app, I'm ready to help you architect it. [cite: 41, 48]
                     </p>
 
                     <div className="space-y-8">

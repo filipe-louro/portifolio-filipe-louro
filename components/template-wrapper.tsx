@@ -6,14 +6,13 @@ export const TemplateWrapper = ({ children, path }: { children: React.ReactNode;
     return (
         <motion.div
             key={path}
-            initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{
-                type: "spring",
-                stiffness: 260,
-                damping: 20,
-                staggerChildren: 0.1,
+                type: "tween",
+                ease: "easeOut",
+                duration: 0.3,
             }}
             className="min-h-screen w-full"
         >

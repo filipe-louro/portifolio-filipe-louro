@@ -108,7 +108,7 @@ export const ServicesSection = () => {
                             Beyond Code: <span className="text-cyan-400">DevOps & Automation</span>
                         </h3>
                         <p className="text-slate-400 text-lg leading-relaxed mb-6">
-                            I don't just write code; I build infrastructure. From setting up CI/CD pipelines to managing Linux VPS environments with Redis and Elasticsearch. [cite_start]I ensure your applications are not just functional, but scalable and resilient. [cite: 36, 40]
+                            I don&#39;t just write code; I build infrastructure. From setting up CI/CD pipelines to managing Linux VPS environments with Redis and Elasticsearch. [cite_start]I ensure your applications are not just functional, but scalable and resilient. [cite: 36, 40]
                         </p>
                         <ul className="space-y-3 text-slate-300">
                             <li className="flex items-center gap-3">
