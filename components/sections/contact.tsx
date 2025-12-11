@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Send, CheckCircle2, Loader2 } from "lucide-react";
+import {Send, CheckCircle2, Loader2, Mail, MapPin, Phone} from 'lucide-react'
 
 const PROJECT_TYPES = ["web", "mobile", "landing"] as const;
 
@@ -39,41 +39,66 @@ export const ContactForm = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6 pt-24">
-            <div className="w-full max-w-4xl grid md:grid-cols-2 gap-12 items-center">
+        <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-6 md:p-12">
+            <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 lg:gap-24 items-start">
 
+                {/* Left Column: Info & Context */}
                 <motion.div
-                    initial={{ opacity: 0, x: -50 }}
+                    initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6 }}
+                    className="pt-10"
                 >
-                    <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                        Vamos construir algo <span className="text-violet-400">épico</span>?
+                    <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                        Let's build something <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">extraordinary.</span>
                     </h2>
-                    <p className="text-slate-400 text-lg mb-8">
-                        Preencha o formulário e receba uma proposta detalhada em até 24h.
-                        Seu próximo nível começa aqui.
+                    <p className="text-slate-400 text-lg mb-12 max-w-lg">
+                        Have a project in mind? Whether it's a complex SaaS platform, an e-commerce solution, or a high-performance web app, I'm ready to help you architect it. [cite: 41, 48]
                     </p>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-4 text-slate-300">
-                            <div className="p-3 bg-white/5 rounded-lg border border-white/10">
-                                <Send size={20} />
+                    <div className="space-y-8">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 text-violet-400">
+                                <Mail size={24} />
                             </div>
-                            <span>contato@developer.com</span>
+                            <div>
+                                <h4 className="text-white font-medium mb-1">Email</h4>
+                                <a href="mailto:filipe-louro@hotmail.com" className="text-slate-400 hover:text-white transition-colors">filipe-louro@hotmail.com [cite: 2]</a>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 text-cyan-400">
+                                <MapPin size={24} />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-medium mb-1">Location</h4>
+                                <p className="text-slate-400">Based in Pelotas, Brazil. Open to remote work worldwide. [cite: 16]</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 text-emerald-400">
+                                <Phone size={24} />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-medium mb-1">Phone</h4>
+                                <p className="text-slate-400">+55 53 98109-8683 [cite: 2]</p>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
 
                 <motion.div
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
-                    className="relative group"
+                    className="relative"
                 >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-2xl blur opacity-20" />
 
-                    <div className="relative bg-slate-950/80 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
+                    <div className="relative bg-slate-950 border border-slate-800 p-8 md:p-10 rounded-2xl shadow-2xl">
                         {isSuccess ? (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.8 }}
@@ -87,25 +112,26 @@ export const ContactForm = () => {
                                 <p className="text-slate-400">Em breve entrarei em contato.</p>
                             </motion.div>
                         ) : (
-                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-slate-400">Nome</label>
-                                    <input
-                                        {...register("name")}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-slate-600"
-                                        placeholder="Seu nome"
-                                    />
-                                    {errors.name && <span className="text-xs text-red-400">{errors.name.message}</span>}
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-slate-400">Email</label>
-                                    <input
-                                        {...register("email")}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-slate-600"
-                                        placeholder="seu@email.com"
-                                    />
-                                    {errors.email && <span className="text-xs text-red-400">{errors.email.message}</span>}
+                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-300">Name</label>
+                                        <input
+                                            {...register("name")}
+                                            className="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-slate-600"
+                                            placeholder="John Doe"
+                                        />
+                                        {errors.name && <span className="text-xs text-red-400">{errors.name.message}</span>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-300">Email</label>
+                                        <input
+                                            {...register("email")}
+                                            className="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-slate-600"
+                                            placeholder="john@example.com"
+                                        />
+                                        {errors.email && <span className="text-xs text-red-400">{errors.email.message}</span>}
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1">
@@ -136,9 +162,9 @@ export const ContactForm = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full py-4 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-lg text-white font-bold tracking-wide hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="w-full py-4 bg-white text-slate-950 rounded-lg font-bold tracking-wide hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                                 >
-                                    {isSubmitting ? <Loader2 className="animate-spin" /> : "Enviar Mensagem"}
+                                    {isSubmitting ? <Loader2 className="animate-spin" /> : <>Send Message <Send size={18} /></>}
                                 </button>
                             </form>
                         )}
