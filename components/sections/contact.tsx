@@ -54,7 +54,7 @@ export const ContactForm = () => {
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">extraordinary.</span>
                     </h2>
                     <p className="text-slate-400 text-lg mb-12 max-w-lg">
-                        Have a project in mind? Whether it&#39;s a complex SaaS platform, an e-commerce solution, or a high-performance web app, I'm ready to help you architect it. [cite: 41, 48]
+                        Have a project in mind? Whether it&#39;s a complex SaaS platform, an e-commerce solution, or a high-performance web app, I'm ready to help you architect it.
                     </p>
 
                     <div className="space-y-8">
@@ -64,7 +64,7 @@ export const ContactForm = () => {
                             </div>
                             <div>
                                 <h4 className="text-white font-medium mb-1">Email</h4>
-                                <a href="mailto:filipe-louro@hotmail.com" className="text-slate-400 hover:text-white transition-colors">filipe-louro@hotmail.com [cite: 2]</a>
+                                <a href="mailto:filipe-louro@hotmail.com" className="text-slate-400 hover:text-white transition-colors">filipe-louro@hotmail.com </a>
                             </div>
                         </div>
 
@@ -74,7 +74,7 @@ export const ContactForm = () => {
                             </div>
                             <div>
                                 <h4 className="text-white font-medium mb-1">Location</h4>
-                                <p className="text-slate-400">Based in Pelotas, Brazil. Open to remote work worldwide. [cite: 16]</p>
+                                <p className="text-slate-400">Based in Pelotas, Brazil. Open to remote work worldwide. </p>
                             </div>
                         </div>
 
@@ -84,7 +84,7 @@ export const ContactForm = () => {
                             </div>
                             <div>
                                 <h4 className="text-white font-medium mb-1">Phone</h4>
-                                <p className="text-slate-400">+55 53 98109-8683 [cite: 2]</p>
+                                <p className="text-slate-400">+55 53 98109-8683</p>
                             </div>
                         </div>
                     </div>
