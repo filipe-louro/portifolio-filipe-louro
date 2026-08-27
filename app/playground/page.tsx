@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom } from 'lucide-react';
+import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom, Waves } from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/spotlight-card';
 
 export default function PlaygroundPage() {
@@ -144,6 +144,24 @@ export default function PlaygroundPage() {
                             </div>
                             <div className="flex items-center text-pink-400 text-sm font-medium mt-4">
                                 Customizar Placa <ArrowRight size={16} className="ml-2" />
+                            </div>
+                        </SpotlightCard>
+                    </Link>
+
+                    {/* Fluid Simulation */}
+                    <Link href="/playground/fluid">
+                        <SpotlightCard className="h-64 p-6 flex flex-col justify-between hover:border-teal-500/50 transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm">
+                            <div>
+                                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-teal-400">
+                                    <Waves size={24} />
+                                </div>
+                                <h2 className="text-xl font-bold text-white mb-2">Fluid Simulation</h2>
+                                <p className="text-slate-400 text-sm">
+                                    Simulação de fluidos em tempo real utilizando GPU, com interação física através do mouse e controles de viscosidade, pressão e vorticidade.
+                                </p>
+                            </div>
+                            <div className="flex items-center text-teal-400 text-sm font-medium mt-4">
+                                Perturbar o Fluido <ArrowRight size={16} className="ml-2" />
                             </div>
                         </SpotlightCard>
                     </Link>
