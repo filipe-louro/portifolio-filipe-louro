@@ -14,6 +14,7 @@ const EXPERIMENT_NAMES: Record<string, string> = {
     matrix: "Matrix Effect",
     orbit: "Orbital Field",
     neon: "Neon Generator",
+    fluid: "Fluid Simulation",
 };
 
 export const Navbar = () => {
