@@ -21,6 +21,14 @@ export const useMatrixWarp = (
     const requestRef = useRef<number>(0);
     const lastTimeRef = useRef<number>(0);
 
+    // cor em ref: o picker RGB dispara muitos eventos por arrasto, e recriar
+    // o efeito a cada um reiniciaria a chuva inteira
+    const colorRef = useRef(color);
+
+    useEffect(() => {
+        colorRef.current = color;
+    }, [color]);
+
     useEffect(() => {
         const canvas = canvasRef.current;
         const container = containerRef.current;
@@ -109,7 +117,7 @@ export const useMatrixWarp = (
 
             columns.sort((a, b) => b.z - a.z);
 
-            const baseColorHex = color;
+            const baseColorHex = colorRef.current;
             let currentFontSize = 0;
             const random = Math.random;
             const floor = Math.floor;
@@ -203,5 +211,5 @@ export const useMatrixWarp = (
             window.removeEventListener('resize', resize);
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
-    }, [color, canvasRef, containerRef]);
+    }, [canvasRef, containerRef]);
 };
