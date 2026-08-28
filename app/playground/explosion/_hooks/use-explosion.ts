@@ -11,17 +11,15 @@ interface MouseState {
 
 class Particle {
     x: number; y: number; originX: number; originY: number; size: number;
-    color: string;
     vx: number; vy: number; friction: number; ease: number; dx: number; dy: number;
     distance: number; force: number; angle: number;
 
-    constructor(x: number, y: number, gap: number, canvasWidth: number, canvasHeight: number, color: string) {
+    constructor(x: number, y: number, gap: number, canvasWidth: number, canvasHeight: number) {
         this.x = Math.random() * canvasWidth;
         this.y = Math.random() * canvasHeight;
         this.originX = x;
         this.originY = y;
         this.size = window.innerWidth < 768 ? gap - 0.5 : gap - 1;
-        this.color = color;
         this.vx = 0;
         this.vy = 0;
         this.friction = 0.92;
@@ -49,7 +47,6 @@ class Particle {
     }
 
     draw(ctx: CanvasRenderingContext2D) {
-        ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.size, this.size);
     }
 }
@@ -62,6 +59,22 @@ export const useExplosion = (
     const mouseRef = useRef<MouseState>({ x: 0, y: 0, radius: 100, isActive: false });
     const animationRef = useRef<number>(0);
 
+    // texto e cor vivem em refs para o efeito principal não ser recriado a cada
+    // tecla/cor: o texto novo vira um "morph" (partículas voam para os novos
+    // alvos) e a cor troca no frame seguinte, sem resetar a simulação
+    const textRef = useRef(text);
+    const colorRef = useRef(color);
+    const initRef = useRef<() => void>(() => {});
+
+    useEffect(() => {
+        colorRef.current = color;
+    }, [color]);
+
+    useEffect(() => {
+        textRef.current = text;
+        initRef.current();
+    }, [text]);
+
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -70,42 +83,74 @@ export const useExplosion = (
         if (!ctx) return;
 
         let particles: Particle[] = [];
-        let animationRunning = true; // Flag local para controlar o loop dentro deste efeito
+        let animationRunning = true;
 
         const init = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            particles = [];
 
-            // Limpa antes de desenhar o texto para leitura
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             ctx.fillStyle = 'white';
+            const currentText = textRef.current || ' ';
             const fontSize = window.innerWidth < 768 ? 20 : 15;
-            const dynamicFontSize = text.length > 6 ? fontSize * (6 / text.length) : fontSize;
+            const dynamicFontSize = currentText.length > 6 ? fontSize * (6 / currentText.length) : fontSize;
 
-            // Define fonte genérica sans-serif como fallback
             ctx.font = `bold ${dynamicFontSize}vw Arial, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            ctx.fillText(currentText, canvas.width / 2, canvas.height / 2);
 
             const textCoordinates = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const gap = window.innerWidth < 768 ? 4 : 3;
 
+            const targets: { x: number; y: number }[] = [];
             for (let y = 0; y < textCoordinates.height; y += gap) {
                 for (let x = 0; x < textCoordinates.width; x += gap) {
                     if (textCoordinates.data[(y * 4 * textCoordinates.width) + (x * 4) + 3] > 128) {
-                        particles.push(new Particle(x, y, gap, canvas.width, canvas.height, color));
+                        targets.push({ x, y });
                     }
                 }
             }
-        };
 
-        const animate = () => {
-            if (!animationRunning) return; // Para se o componente desmontou ou mudou dependencies
+            // morph: partículas existentes recebem novos alvos e voam até eles;
+            // as que faltam nascem espalhadas; as que sobram se fundem em alvos
+            // aleatórios do texto novo (em vez de sumir num "pop")
+            const size = window.innerWidth < 768 ? gap - 0.5 : gap - 1;
+            const previous = particles;
+            particles = [];
+
+            for (let i = 0; i < targets.length; i++) {
+                if (i < previous.length) {
+                    const p = previous[i];
+                    p.originX = targets[i].x;
+                    p.originY = targets[i].y;
+                    p.size = size;
+                    particles.push(p);
+                } else {
+                    particles.push(new Particle(targets[i].x, targets[i].y, gap, canvas.width, canvas.height));
+                }
+            }
+            if (targets.length > 0) {
+                for (let i = targets.length; i < previous.length; i++) {
+                    const p = previous[i];
+                    const target = targets[Math.floor(Math.random() * targets.length)];
+                    p.originX = target.x;
+                    p.originY = target.y;
+                    p.size = size;
+                    particles.push(p);
+                }
+            }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
+        initRef.current = init;
+
+        const animate = () => {
+            if (!animationRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = colorRef.current;
             for (let i = 0; i < particles.length; i++) {
                 particles[i].update(mouseRef.current);
                 particles[i].draw(ctx);
@@ -118,7 +163,6 @@ export const useExplosion = (
             if (!animationRunning) return;
             init();
 
-            // CORREÇÃO: Cancela qualquer frame anterior pendente antes de iniciar um novo
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
             animate();
         });
@@ -141,7 +185,7 @@ export const useExplosion = (
         let resizeTimer = 0;
         const handleResize = () => {
             window.clearTimeout(resizeTimer);
-            resizeTimer = window.setTimeout(init, 150);
+            resizeTimer = window.setTimeout(() => initRef.current(), 150);
         };
 
         window.addEventListener('mousemove', handleMove);
@@ -152,9 +196,10 @@ export const useExplosion = (
         window.addEventListener('touchend', handleLeave);
 
         return () => {
-            animationRunning = false; // Mata o loop local
+            animationRunning = false;
             window.clearTimeout(resizeTimer);
             cancelAnimationFrame(animationRef.current);
+            initRef.current = () => {};
             window.removeEventListener('mousemove', handleMove);
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('resize', handleResize);
@@ -162,5 +207,5 @@ export const useExplosion = (
             window.removeEventListener('mouseleave', handleLeave);
             window.removeEventListener('touchend', handleLeave);
         };
-    }, [canvasRef, text, color]);
+    }, [canvasRef]);
 };

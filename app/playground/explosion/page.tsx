@@ -4,7 +4,7 @@ import { ExplodingCanvas } from './_components/exploding-canvas';
 import { TemplateWrapper } from '@/components/template-wrapper';
 
 export const metadata: Metadata = {
-    title: 'Exploding Text | Playground',
+    title: 'Particle Text | Simulation',
     description: 'Experimento interativo com Canvas API e física de partículas.',
 };
 
