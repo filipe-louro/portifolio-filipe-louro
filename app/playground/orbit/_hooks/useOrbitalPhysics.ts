@@ -31,6 +31,8 @@ export const useOrbitalPhysics = (
     const animationFrameRef = useRef<number>(0);
     const centerRef = useRef({ x: 0, y: 0 });
     const pointerRef = useRef<PointerState>({ x: 0, y: 0, active: false });
+    // física e ponteiro trabalham em pixels CSS; o DPR só afeta o buffer do canvas
+    const dprRef = useRef(1);
 
     const configRef = useRef(config);
     const interactionModeRef = useRef(interactionMode);
@@ -57,8 +59,8 @@ export const useOrbitalPhysics = (
 
     const initParticles = useCallback(() => {
         if (!canvasRef.current) return;
-        const width = canvasRef.current.width;
-        const height = canvasRef.current.height;
+        const width = canvasRef.current.width / dprRef.current;
+        const height = canvasRef.current.height / dprRef.current;
         centerRef.current.x = width / 2;
         centerRef.current.y = height / 2;
 
@@ -121,8 +123,10 @@ export const useOrbitalPhysics = (
         const ctx = canvasRef.current.getContext('2d', { alpha: false });
         if (!ctx) return;
 
-        const width = canvasRef.current.width;
-        const height = canvasRef.current.height;
+        const dpr = dprRef.current;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const width = canvasRef.current.width / dpr;
+        const height = canvasRef.current.height / dpr;
         const cfg = configRef.current;
         const mode = interactionModeRef.current;
 
@@ -244,8 +248,10 @@ export const useOrbitalPhysics = (
     useEffect(() => {
         const handleResize = () => {
             if (canvasRef.current) {
-                canvasRef.current.width = window.innerWidth;
-                canvasRef.current.height = window.innerHeight;
+                const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+                dprRef.current = dpr;
+                canvasRef.current.width = window.innerWidth * dpr;
+                canvasRef.current.height = window.innerHeight * dpr;
                 initParticles();
             }
         };

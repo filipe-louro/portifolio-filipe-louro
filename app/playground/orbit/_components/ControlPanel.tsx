@@ -66,7 +66,7 @@ export const ControlPanel = ({ config, setConfig, show }: PanelProps) => {
                 <ControlSlider label="Cor do Núcleo" name="coreHue" value={config.coreHue} min={0} max={360} step={1} unit="" isColor={true} onChange={handleChange} />
 
                 <div className="mt-6 pt-4 border-t border-white/10 text-[10px] text-blue-300/50 leading-relaxed">
-                    Dica: Use o botão no topo esquerdo para alternar entre empurrar (repulsão) ou puxar (atração) as partículas com o toque.
+                    Dica: o botão Repelir/Atrair no topo direito alterna o modo de interação do toque.
                 </div>
             </div>
         </div>

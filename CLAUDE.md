@@ -183,6 +183,64 @@ Novos Labs devem parecer parte do mesmo Playground, mas não são obrigados a co
 - cada Lab tem sua própria cor de destaque (cyan no keyboard, laranja no blackhole, verde no matrix, etc.) usada em bordas de hover, glow e textos de ação;
 - overlays de texto/HUD usam `pointer-events-none` onde não são interativos, e `mix-blend-*`/`drop-shadow` para efeitos de leitura sobre a cena.
 
+### 14.1 Padrão de HUD e tipografia dos Labs
+
+Padrão obrigatório para Labs novos e para Labs reformados (a referência visual é o
+caption do Gargantua, validado em produção). Labs antigos ainda não migrados não
+devem ser convertidos "de carona" em outra tarefa — migração é sempre uma mudança
+explícita, um Lab por vez.
+
+**Anatomia — 4 zonas fixas sobre a cena:**
+
+```text
+┌─────────────────────────────────────────────┐
+│                (navbar global)   [ações] ←Z2│
+│                                             │
+│                  CENA                       │
+│                             [painel  ] ←Z3  │
+│                             [config  ]      │
+│ Z1→ TÍTULO DO LAB                           │
+│     subtítulo . descritor                   │
+│              (dica/status) ←Z4              │
+└─────────────────────────────────────────────┘
+```
+
+- **Z1 — Identidade** (inferior esquerdo): usar `components/lab-caption.tsx`
+  (`LabCaption`). Título `text-3xl md:text-4xl font-extralight tracking-[0.2em]
+  uppercase` na cor `text-{accent}-100`; subtítulo `text-xs uppercase
+  tracking-widest opacity-60` na cor `text-{accent}-200`, com termos separados
+  por ` . ` (ponto entre espaços). Container `bottom-8 left-6 md:bottom-12
+  md:left-12`, `pointer-events-none select-none mix-blend-screen`.
+- **Z2 — Ações primárias** (superior direito, `top-6 right-6`): botões redondos
+  de ícone `p-3 rounded-full backdrop-blur-md border` com a cor de destaque do
+  Lab (`bg-{accent}-500/10 hover:bg-{accent}-500/30 text-{accent}-300
+  border-{accent}-500/20`), `active:scale-90`. Toggles textuais viram pills
+  (`rounded-full text-xs font-bold uppercase tracking-wider`).
+- **Z3 — Painel de configuração** (lateral direita no desktop, bottom-sheet no
+  mobile): vidro `bg-slate-900/70 backdrop-blur border-white/10 rounded-2xl`;
+  labels de slider `text-xs font-bold uppercase tracking-widest` na cor
+  `text-{accent}-200`; valores numéricos sempre em `font-mono`.
+- **Z4 — Dica/status** (inferior central): `text-[10px] uppercase
+  tracking-widest text-white/30`, `pointer-events-none`. Uma linha, sem ícone.
+
+**Regras de tipografia (valem para qualquer texto sobre cena):**
+- Identidade em `font-extralight` + tracking largo; NUNCA gradiente de texto,
+  `font-bold` ou glow no título do Lab — brilho é papel da cena, não do texto.
+- Dados/valores/medidas em `font-mono`; prosa curta em `Inter` normal.
+- Texto sobre cena escura usa opacidade (`text-white/30..50`, `opacity-60`) em
+  vez de cores sólidas claras.
+
+**Método de aplicação (checklist ao criar/reformar um Lab):**
+1. Definir a cor de destaque do Lab (a mesma do card no grid e uma só).
+2. Montar Z1 com `LabCaption` — título curto (1–3 palavras) + subtítulo
+   `Termo . Termo`.
+3. Colocar toda ação clicável em Z2; nada de botão solto em outro canto.
+4. Config avançada (sliders etc.) vai para Z3, atrás de um botão de Z2.
+5. Instrução de interação (se houver) em Z4.
+6. Conferir os quatro cantos: navbar (topo centro), Z2, Z1, Z4 — nada pode
+   colidir em mobile (~375px) nem em desktop.
+7. Validar na rota real (aba do navegador) antes de considerar concluído.
+
 ## 15. Acessibilidade e responsividade
 
 - inputs e botões de controle devem ter `aria-label` quando não há texto visível (ver `exploding-canvas.tsx`);

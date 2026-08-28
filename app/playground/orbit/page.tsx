@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import OrbitScene from './_components/OrbitScene';
 
 export const metadata: Metadata = {
-    title: 'Orbital Field Simulator | Portfolio',
+    title: 'Orbital Field | Simulation',
     description: 'Interactive particle physics simulation using Canvas API.',
 };
 
