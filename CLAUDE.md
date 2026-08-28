@@ -4,14 +4,15 @@ Guia de contexto para trabalhar neste repositório com Claude Code. Este arquivo
 
 ## 1. Visão geral
 
-Portfólio pessoal (Filipe Louro) construído em Next.js. Tem duas partes bem distintas:
+Lab de animações de Filipe Louro construído em Next.js. O site é **exclusivamente** uma coleção de experiências visuais interativas independentes ("Labs") — teclado RGB, campo orbital, buraco negro (raymarching WebGL2 com resolução adaptativa), chuva Matrix, explosão de texto em partículas, cidade vaporwave, gerador de letreiro neon e simulação de fluidos em GPU. Cada Lab é uma demo técnica isolada, sem dependência entre si.
 
-- **Site principal (`/`)**: hero, portfolio/serviços e contato, navegados como abas client-side (não são rotas reais) via `NavProvider` + `AnimatePresence`.
-- **Playground/Lab (`/playground/*`)**: uma coleção de experiências visuais interativas independentes ("Labs") — teclado RGB, campo orbital, buraco negro (raymarching WebGL2), chuva Matrix, explosão de texto em partículas, cidade vaporwave e gerador de letreiro neon. Cada Lab é uma demo técnica isolada, sem dependência entre si.
+- **`/`**: índice do Lab — grid de cards (`components/lab-grid.tsx`) apontando para cada experiência.
+- **`/playground/<slug>`**: cada Lab individual.
+- `/playground` e `/projects/*` são redirects permanentes para `/` (rotas antigas, ver `next.config.ts`).
 
-Existe ainda uma terceira área, `/projects/{backend,frontend,saas}`, que simula uma IDE (explorer de arquivos + editor + terminal falsos) para apresentar três projetos fictícios/reais do portfólio. Não é um "Lab" — é conteúdo de apresentação, com estrutura copiada entre os três (ver seção 15).
+> Histórico: o repositório já teve um site de portfólio (hero/serviços/contato como abas client-side) e três páginas `/projects/*` simulando uma IDE. Foram removidos em ago/2026 para focar o projeto como lab de animações — o código está no histórico do git se precisar de referência.
 
-Ao pedir um "novo Lab", isso significa: uma nova rota em `app/playground/<slug>/`, com card correspondente no índice do Playground.
+Ao pedir um "novo Lab", isso significa: uma nova rota em `app/playground/<slug>/`, com card correspondente no grid do índice.
 
 ## 2. Stack real
 
@@ -19,7 +20,6 @@ Ao pedir um "novo Lab", isso significa: uma nova rota em `app/playground/<slug>/
 - **Tailwind CSS v4** via `@tailwindcss/postcss` — não existe `tailwind.config.*`, configuração é CSS-first em `app/globals.css`
 - **Framer Motion** para transições/animação de UI (não usado dentro de loops de canvas/WebGL)
 - **Canvas 2D e WebGL2 puros** (sem Three.js, sem react-three-fiber) — todo Lab gráfico é feito na mão
-- **react-hook-form + zod** (`@hookform/resolvers/zod`) — usado no formulário de contato
 - **lucide-react** para ícones, **clsx + tailwind-merge** via helper `cn()` em `lib/utils.ts`
 - Alias de import: `@/*` aponta para a raiz do projeto (ver `tsconfig.json`)
 - Sem framework de testes configurado (nenhum Jest/Vitest/Playwright)
@@ -30,22 +30,17 @@ Ao pedir um "novo Lab", isso significa: uma nova rota em `app/playground/<slug>/
 
 ```text
 app/
-├── layout.tsx              # Root layout: fonte Inter, Navbar, NavProvider
-├── page.tsx                 # Home: troca de "abas" client-side (não são rotas)
+├── layout.tsx              # Root layout: fonte Inter, Navbar, metadata global
+├── page.tsx                 # Índice do Lab (Server Component, monta o LabGrid)
 ├── globals.css
 ├── playground/
-│   ├── page.tsx              # Índice do Lab (grid de cards -> cada experiência)
-│   ├── keyboard/  orbit/  blackhole/  matrix/  explosion/  vaporwave/  neon/
+│   ├── keyboard/  orbit/  blackhole/  matrix/  explosion/  vaporwave/  neon/  fluid/
 │   │   └── <cada um segue o padrão da seção 5>
-├── projects/
-│   ├── backend/  frontend/  saas/
-│   │   └── page.tsx + _components/{IDE,CodeEditor,FileExplorer,Terminal}.tsx + _data/projectFiles.ts
 components/
-├── navbar.tsx                # Contém EXPERIMENT_NAMES: mapa slug -> nome exibido no Lab
-├── template-wrapper.tsx       # Wrapper de transição (framer-motion) usado por várias páginas
-├── providers/nav-provider.tsx # Contexto da aba ativa da Home
-├── sections/{hero,services,contact}.tsx
-└── ui/spotlight-card.tsx      # Card com spotlight que segue o mouse (usado no índice do Lab)
+├── lab-grid.tsx              # Grid de cards do índice (array LABS: um item por Lab)
+├── navbar.tsx                # Pill fixa: link p/ índice + breadcrumb (EXPERIMENT_NAMES: slug -> nome)
+├── template-wrapper.tsx       # Wrapper de transição (framer-motion) usado por alguns Labs
+└── ui/spotlight-card.tsx      # Card com spotlight que segue o mouse (usado no índice)
 lib/utils.ts                  # cn() — merge de classes Tailwind
 ```
 
@@ -96,7 +91,7 @@ Se o Lab precisar de algo diferente disso, não force a estrutura — o padrão 
 
 Além da pasta em si, dois arquivos compartilhados precisam ser tocados:
 
-1. **`app/playground/page.tsx`**: adicionar um `<SpotlightCard>` novo dentro do grid, com ícone `lucide-react`, cor de destaque própria (ex.: `hover:border-<cor>-500/50`) e link para a nova rota.
+1. **`components/lab-grid.tsx`**: adicionar um item no array `LABS` (slug, título, descrição, ícone `lucide-react` e cor de destaque própria — as classes de cor são strings literais completas, ex.: `hover:border-teal-500/50`, porque o Tailwind não vê classes interpoladas).
 2. **`components/navbar.tsx`**: adicionar a entrada no objeto `EXPERIMENT_NAMES` (slug → nome exibido no breadcrumb do Lab).
 
 ## 6. Regra mais importante — código para humanos lerem
@@ -230,9 +225,8 @@ Não faça commit nem crie branch automaticamente — isso é feito manualmente.
 Registrados aqui para não serem confundidos com bugs a corrigir de surpresa numa tarefa não relacionada:
 
 - `gl-matrix` está instalado mas não é usado em nenhum arquivo.
-- `app/globals.css` ainda referencia `--font-geist-sans`/`--font-geist-mono` (sobra do boilerplate do `create-next-app`), mas o projeto usa a fonte `Inter` via `next/font/google` em `app/layout.tsx` — essas variáveis não têm efeito.
-- `app/projects/{backend,frontend,saas}` têm `IDE.tsx`, `CodeEditor.tsx`, `FileExplorer.tsx`, `Terminal.tsx` praticamente duplicados entre os três, com pequenas diferenças de conteúdo/cor por projeto — duplicação intencional até aqui, não um Lab, não mexer a menos que peçam para unificar.
 - O `README.md` na raiz ainda é o boilerplate padrão do `create-next-app`, sem nada específico deste projeto.
+- O diretório `.idea/` (config do JetBrains) está commitado.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
