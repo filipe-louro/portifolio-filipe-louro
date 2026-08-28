@@ -28,7 +28,7 @@ export const useVaporwaveEngine = (canvasRef: React.RefObject<HTMLCanvasElement 
             offscreenCanvas.height = h;
 
             const horizonY = h * 0.55;
-            const buildings = generateCityData(w, h);
+            const buildings = generateCityData(w);
 
             const grad = offCtx.createLinearGradient(0, 0, 0, horizonY);
             grad.addColorStop(0, '#0f172a');

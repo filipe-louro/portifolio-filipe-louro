@@ -13,7 +13,6 @@ export const useRGBAnimation = (
     const posCacheRef = useRef<Map<string, { x: number, y: number }>>(new Map());
     const needsLayoutRef = useRef(true);
 
-    const requestRef = useRef<number>(0);
     const timeRef = useRef(0);
     const ripplesRef = useRef<{ key: string, x: number, y: number, time: number }[]>([]);
 
@@ -45,7 +44,8 @@ export const useRGBAnimation = (
             if (!pos) return;
 
             const { x: centerX, y: centerY } = pos;
-            let h = 0, s = 100, l = 50;
+            const s = 100;
+            let h = 0, l = 50;
 
             if (config.mode === 'wave') {
                 const spatial = config.direction === 'ltr' ? centerX * 0.5 : -centerX * 0.5;
@@ -115,8 +115,6 @@ export const useRGBAnimation = (
                 el.style.textShadow = 'none';
             }
         });
-
-        requestRef.current = requestAnimationFrame(animate);
     }, [config, activeKeys]);
 
     const triggerKey = useCallback((key: string, x: number, y: number) => {
@@ -146,10 +144,17 @@ export const useRGBAnimation = (
     useEffect(() => {
         const handleResize = () => { needsLayoutRef.current = true; };
         window.addEventListener('resize', handleResize);
-        requestRef.current = requestAnimationFrame(animate);
+
+        let rafId = 0;
+        const loop = () => {
+            animate();
+            rafId = requestAnimationFrame(loop);
+        };
+        rafId = requestAnimationFrame(loop);
+
         return () => {
             window.removeEventListener('resize', handleResize);
-            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+            cancelAnimationFrame(rafId);
         };
     }, [animate]);
 

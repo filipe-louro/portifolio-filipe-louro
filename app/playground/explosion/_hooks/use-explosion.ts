@@ -136,12 +136,16 @@ export const useExplosion = (
         };
         const handleLeave = () => { mouseRef.current.isActive = false; };
 
+        // Debounce: init() reescaneia todos os pixels do texto, caro demais
+        // para rodar em cada evento de resize durante o arrasto da janela
+        let resizeTimer = 0;
         const handleResize = () => {
-            init();
+            window.clearTimeout(resizeTimer);
+            resizeTimer = window.setTimeout(init, 150);
         };
 
         window.addEventListener('mousemove', handleMove);
-        window.addEventListener('touchmove', handleTouchMove, { passive: false });
+        window.addEventListener('touchmove', handleTouchMove, { passive: true });
         window.addEventListener('resize', handleResize);
         window.addEventListener('mouseup', handleLeave);
         window.addEventListener('mouseleave', handleLeave);
@@ -149,6 +153,7 @@ export const useExplosion = (
 
         return () => {
             animationRunning = false; // Mata o loop local
+            window.clearTimeout(resizeTimer);
             cancelAnimationFrame(animationRef.current);
             window.removeEventListener('mousemove', handleMove);
             window.removeEventListener('touchmove', handleTouchMove);

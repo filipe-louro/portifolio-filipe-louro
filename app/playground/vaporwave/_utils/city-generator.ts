@@ -6,7 +6,7 @@ export interface Building {
     hasSpire: boolean;
 }
 
-export const generateCityData = (w: number, h: number): Building[] => {
+export const generateCityData = (w: number): Building[] => {
     const buildings: Building[] = [];
     let currentX = -50;
     const colors = ['#06b6d4', '#d946ef', '#8b5cf6'];
