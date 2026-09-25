@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
-import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom, Waves } from 'lucide-react';
+import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom, Waves, Disc, Boxes, Scissors } from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/spotlight-card';
 
 interface LabCard {
@@ -88,6 +88,33 @@ const LABS: LabCard[] = [
         icon: <Waves size={24} />,
         accentText: 'text-teal-400',
         accentBorder: 'hover:border-teal-500/50',
+    },
+    {
+        slug: 'chladni',
+        title: 'Chladni Resonance Patterns',
+        description: 'Simulação acústica de placas ressonantes em Canvas 2D com nós harmônicos e síntese sonora de frequências.',
+        action: 'Excitar a Placa',
+        icon: <Disc size={24} />,
+        accentText: 'text-amber-400',
+        accentBorder: 'hover:border-amber-500/50',
+    },
+    {
+        slug: 'mandelbulb',
+        title: 'Raymarched 3D Mandelbulb',
+        description: 'Raymarching volumétrico em WebGL 2.0 de fractal 3D hiperdimensional com órbita e iluminação por estimativa de distância.',
+        action: 'Explorar Fractal',
+        icon: <Boxes size={24} />,
+        accentText: 'text-violet-400',
+        accentBorder: 'hover:border-violet-500/50',
+    },
+    {
+        slug: 'cloth',
+        title: 'Verlet Cloth Simulation',
+        description: 'Física têxtil interativa em Canvas 2D com integração Verlet, arrasto elástico, vento e corte dinâmico de conexões.',
+        action: 'Manipular Tecido',
+        icon: <Scissors size={24} />,
+        accentText: 'text-rose-400',
+        accentBorder: 'hover:border-rose-500/50',
     },
 ];
 

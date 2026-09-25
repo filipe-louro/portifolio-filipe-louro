@@ -13,6 +13,9 @@ const EXPERIMENT_NAMES: Record<string, string> = {
     orbit: "Orbital Field",
     neon: "Neon Generator",
     fluid: "Fluid Simulation",
+    chladni: "Chladni Patterns",
+    mandelbulb: "Mandelbulb 3D",
+    cloth: "Verlet Cloth",
 };
 
 export const Navbar = () => {
