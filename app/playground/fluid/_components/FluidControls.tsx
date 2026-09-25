@@ -54,7 +54,7 @@ export const FluidControls = ({ config, setConfig, show, isPaused, onTogglePause
 
     return (
         <div
-            className={`absolute md:right-6 right-0 top-64 md:top-24 bottom-0 md:bottom-auto md:w-80 w-full transition-all duration-500 z-20 ${
+            className={`absolute right-0 md:right-6 top-20 bottom-0 md:bottom-auto md:w-80 w-full transition-all duration-300 z-30 ${
                 show ? 'translate-y-0 md:translate-x-0 opacity-100' : 'translate-y-full md:translate-y-0 md:translate-x-[120%] opacity-0 pointer-events-none'
             }`}
         >

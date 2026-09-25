@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useVaporwaveEngine } from '@/app/playground/vaporwave/_hooks/use-vaporwave-engine';
+import { LabCaption } from '@/components/lab-caption';
 
 export default function VaporwaveCityScene() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -9,17 +10,24 @@ export default function VaporwaveCityScene() {
     useVaporwaveEngine(canvasRef);
 
     return (
-        <div className="fixed inset-0 w-full h-full bg-slate-950 overflow-hidden">
+        <div className="fixed inset-0 w-full h-full bg-slate-950 overflow-hidden select-none">
             <canvas
                 ref={canvasRef}
                 className="block w-full h-full"
                 style={{ transform: 'translateZ(0)' }}
             />
 
-            <div className="absolute bottom-[12%] left-0 w-full text-center pointer-events-none select-none">
-                <p className="text-cyan-400 text-xs md:text-sm font-mono tracking-[0.5em] uppercase animate-pulse drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">
-                    N E O - T O K Y O // A P P R O A C H
-                </p>
+            {/* Z1 — identidade */}
+            <LabCaption
+                title="Retro Vaporwave"
+                subtitle="Cena Procedural Outrun . Canvas 2D"
+                titleClassName="text-fuchsia-100"
+                subtitleClassName="text-fuchsia-200"
+            />
+
+            {/* Z4 — dica/status */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center">
+                Mova o cursor para pilotar // Segure o clique para turbo
             </div>
         </div>
     );

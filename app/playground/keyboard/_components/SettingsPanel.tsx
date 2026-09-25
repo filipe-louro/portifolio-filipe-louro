@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Settings, Waves, ScanLine, MousePointer2, Power, X,
+    Waves, ScanLine, MousePointer2, Power, X,
     Activity, Sliders, Palette, Aperture, ArrowLeft, ArrowRight
 } from 'lucide-react';
 import { RGBConfig, RGBMode, StaticType, RGBDirection } from '../_utils/types';
@@ -214,16 +214,6 @@ export const SettingsPanel = ({ config, setConfig }: SettingsPanelProps) => {
                     </>
                 )}
             </AnimatePresence>
-
-            {!config.isPanelOpen && (
-                <motion.button
-                    layoutId="settings-trigger"
-                    onClick={() => setConfig(p => ({ ...p, isPanelOpen: true }))}
-                    className="absolute bottom-4 right-4 md:bottom-8 md:right-8 w-10 h-10 md:w-12 md:h-12 bg-cyan-500/10 border border-cyan-500/50 text-cyan-400 rounded-full flex items-center justify-center backdrop-blur hover:bg-cyan-500/20 z-40 shadow-[0_0_15px_rgba(6,182,212,0.3)] hidden md:flex portrait:hidden landscape:flex"
-                >
-                    <Settings size={20} className="animate-spin-slow" />
-                </motion.button>
-            )}
         </>
     );
 };
