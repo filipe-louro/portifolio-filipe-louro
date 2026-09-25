@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Power, RotateCw, Smartphone, Settings2, X } from 'lucide-react';
+import { Power, RotateCw, Smartphone, Settings2, X, Volume2, VolumeX } from 'lucide-react';
 import { KEY_LAYOUT, DEFAULT_CONFIG } from '../_utils/constants';
 import { RGBConfig } from '../_utils/types';
 import { useRGBAnimation } from '../_hooks/useRGBAnimation';
@@ -20,6 +20,17 @@ export default function KeyboardGrid() {
 
             {/* Z2 — ações primárias */}
             <div className="absolute top-6 right-6 z-30 flex items-center gap-3">
+                <button
+                    onClick={() => setConfig(p => ({ ...p, soundEnabled: !p.soundEnabled }))}
+                    aria-label={config.soundEnabled ? 'Silenciar som dos switches' : 'Ativar som dos switches'}
+                    className={`p-3 rounded-full backdrop-blur-md border transition-all active:scale-90 shadow-lg ${
+                        config.soundEnabled
+                            ? 'bg-cyan-500/10 hover:bg-cyan-500/30 text-cyan-300 border-cyan-500/20 shadow-cyan-900/20'
+                            : 'bg-white/10 hover:bg-white/20 text-white/40 border-white/10'
+                    }`}
+                >
+                    {config.soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                </button>
                 <button
                     onClick={() => setConfig(p => ({ ...p, isOn: !p.isOn }))}
                     aria-label={config.isOn ? 'Desligar iluminação' : 'Ligar iluminação'}

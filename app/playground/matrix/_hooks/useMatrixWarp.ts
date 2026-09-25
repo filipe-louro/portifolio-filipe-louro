@@ -21,8 +21,6 @@ export const useMatrixWarp = (
     const requestRef = useRef<number>(0);
     const lastTimeRef = useRef<number>(0);
 
-    // cor em ref: o picker RGB dispara muitos eventos por arrasto, e recriar
-    // o efeito a cada um reiniciaria a chuva inteira
     const colorRef = useRef(color);
 
     useEffect(() => {
@@ -43,6 +41,11 @@ export const useMatrixWarp = (
         let w = 0, h = 0;
         let cx = 0, cy = 0;
 
+        let currentYaw = 0;
+        let currentPitch = 0;
+        let targetYaw = 0;
+        let targetPitch = 0;
+
         const fontSize = 40;
         const focalLength = 400;
         const warpSpeed = 12;
@@ -55,9 +58,44 @@ export const useMatrixWarp = (
         const columns: Column[] = [];
         let numColumns = 0;
 
+        const onMouseMove = (e: MouseEvent) => {
+            const relX = (e.clientX / window.innerWidth) - 0.5;
+            const relY = (e.clientY / window.innerHeight) - 0.5;
+            targetYaw = relX * 0.65;
+            targetPitch = -relY * 0.45;
+        };
+
+        const onTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 0) return;
+            const touch = e.touches[0];
+            const relX = (touch.clientX / window.innerWidth) - 0.5;
+            const relY = (touch.clientY / window.innerHeight) - 0.5;
+            targetYaw = relX * 0.65;
+            targetPitch = -relY * 0.45;
+        };
+
+        const onTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 0) return;
+            const touch = e.touches[0];
+            const relX = (touch.clientX / window.innerWidth) - 0.5;
+            const relY = (touch.clientY / window.innerHeight) - 0.5;
+            targetYaw = relX * 0.65;
+            targetPitch = -relY * 0.45;
+        };
+
+        const onTouchEnd = () => {
+            targetYaw = 0;
+            targetPitch = 0;
+        };
+
+        const onMouseLeave = () => {
+            targetYaw = 0;
+            targetPitch = 0;
+        };
+
         const resetColumn = (col: Column, zStart?: number) => {
-            const spreadX = w * 5;
-            const spreadY = h * 4;
+            const spreadX = w * 5.5;
+            const spreadY = h * 4.5;
 
             col.x = (Math.random() - 0.5) * spreadX;
             col.y = (Math.random() - 0.5) * spreadY;
@@ -106,16 +144,21 @@ export const useMatrixWarp = (
             lastTimeRef.current = time;
 
             let factor = deltaTime / TARGET_MS;
-
             if (factor > 4) factor = 1;
+
+            currentYaw += (targetYaw - currentYaw) * 0.05;
+            currentPitch += (targetPitch - currentPitch) * 0.05;
+
+            const cosYaw = Math.cos(currentYaw);
+            const sinYaw = Math.sin(currentYaw);
+            const cosPitch = Math.cos(currentPitch);
+            const sinPitch = Math.sin(currentPitch);
 
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.fillRect(0, 0, w, h);
 
             ctx.textBaseline = 'top';
             ctx.textAlign = 'center';
-
-            columns.sort((a, b) => b.z - a.z);
 
             const baseColorHex = colorRef.current;
             let currentFontSize = 0;
@@ -126,7 +169,6 @@ export const useMatrixWarp = (
                 const col = columns[i];
 
                 col.z -= (warpSpeed * col.speedOffset) * factor;
-
                 col.charTimer += factor;
 
                 if (col.charTimer > 7) {
@@ -148,31 +190,37 @@ export const useMatrixWarp = (
                     continue;
                 }
 
-                const scale = focalLength / col.z;
-
-                const px = (cx + col.x * scale) | 0;
-                const py = (cy + col.y * scale) | 0;
-
-                if (px < -50 || px > w + 50 || py > h + 50 || py < -50) continue;
-
-                const size = fontSize * scale;
-                const sizeInt = Math.max(1, size | 0);
-
-                if (sizeInt !== currentFontSize) {
-                    ctx.font = `${sizeInt}px monospace`;
-                    currentFontSize = sizeInt;
-                }
-
-                const baseAlpha = Math.min(1, Math.max(0, (1 - col.z / maxDepth) * 1.5));
-                if (baseAlpha <= 0.05) continue;
-
                 const charLen = col.chars.length;
                 for (let j = 0; j < charLen; j++) {
                     const charYWorld = col.y + (j * fontSize * 1.1);
-                    const charPy = (cy + charYWorld * scale) | 0;
 
-                    if (charPy > h + sizeInt) break;
-                    if (charPy < -sizeInt) continue;
+                    // Rotação de câmera 3D: Pitch (em X) e Yaw (em Y)
+                    const cy1 = charYWorld * cosPitch - col.z * sinPitch;
+                    const cz1 = charYWorld * sinPitch + col.z * cosPitch;
+
+                    const cx2 = col.x * cosYaw - cz1 * sinYaw;
+                    const cz2 = col.x * sinYaw + cz1 * cosYaw;
+
+                    if (cz2 <= 10) continue;
+
+                    const charScale = focalLength / cz2;
+                    const charPx = (cx + cx2 * charScale) | 0;
+                    const charPy = (cy + cy1 * charScale) | 0;
+
+                    const size = fontSize * charScale;
+                    const sizeInt = Math.max(1, size | 0);
+
+                    if (charPx < -sizeInt || charPx > w + sizeInt || charPy > h + sizeInt || charPy < -sizeInt) {
+                        continue;
+                    }
+
+                    if (sizeInt !== currentFontSize) {
+                        ctx.font = `${sizeInt}px monospace`;
+                        currentFontSize = sizeInt;
+                    }
+
+                    const baseAlpha = Math.min(1, Math.max(0, (1 - cz2 / maxDepth) * 1.5));
+                    if (baseAlpha <= 0.05) continue;
 
                     const isHead = (j === charLen - 1);
 
@@ -194,7 +242,7 @@ export const useMatrixWarp = (
                         if (ctx.fillStyle !== baseColorHex) ctx.fillStyle = baseColorHex;
                     }
 
-                    ctx.fillText(col.chars[j], px, charPy);
+                    ctx.fillText(col.chars[j], charPx, charPy);
                 }
             }
 
@@ -206,9 +254,19 @@ export const useMatrixWarp = (
         requestRef.current = requestAnimationFrame(draw);
 
         window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('touchstart', onTouchStart, { passive: true });
+        window.addEventListener('touchmove', onTouchMove, { passive: true });
+        window.addEventListener('touchend', onTouchEnd, { passive: true });
+        window.addEventListener('mouseleave', onMouseLeave);
 
         return () => {
             window.removeEventListener('resize', resize);
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('touchstart', onTouchStart);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+            window.removeEventListener('mouseleave', onMouseLeave);
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
     }, [canvasRef, containerRef]);

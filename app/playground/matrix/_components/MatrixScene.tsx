@@ -102,8 +102,8 @@ export const MatrixScene = () => {
             />
 
             {/* Z4 — dica de interação */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30">
-                Chuva procedural com profundidade 3D
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4">
+                Mova o mouse para inclinar a câmera 3D . Profundidade interativa
             </div>
 
             {/* Vignette Overlay */}

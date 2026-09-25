@@ -4,9 +4,9 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Waves, ScanLine, MousePointer2, Power, X,
-    Activity, Sliders, Palette, Aperture, ArrowLeft, ArrowRight
+    Activity, Sliders, Palette, Aperture, ArrowLeft, ArrowRight, Volume2
 } from 'lucide-react';
-import { RGBConfig, RGBMode, StaticType, RGBDirection } from '../_utils/types';
+import { RGBConfig, RGBMode, StaticType, RGBDirection, SwitchType } from '../_utils/types';
 
 interface SettingsPanelProps {
     config: RGBConfig;
@@ -205,6 +205,78 @@ export const SettingsPanel = ({ config, setConfig }: SettingsPanelProps) => {
                                         </div>
                                     </div>
                                 )}
+
+                                <div className="space-y-4 pt-4 border-t border-white/5">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                            <Volume2 size={12} className="text-cyan-400" /> Switch Acoustics
+                                        </label>
+                                        <button
+                                            onClick={() => setConfig(p => ({ ...p, soundEnabled: !p.soundEnabled }))}
+                                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition-all ${
+                                                config.soundEnabled
+                                                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                                                    : 'bg-white/5 text-slate-500 border-white/10'
+                                            }`}
+                                        >
+                                            {config.soundEnabled ? 'SOUND ON' : 'MUTED'}
+                                        </button>
+                                    </div>
+
+                                    {config.soundEnabled && (
+                                        <>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {[
+                                                    { id: 'blue', label: 'Blue', desc: 'Clicky' },
+                                                    { id: 'brown', label: 'Brown', desc: 'Tactile' },
+                                                    { id: 'red', label: 'Red', desc: 'Linear' },
+                                                ].map((sw) => (
+                                                    <button
+                                                        key={sw.id}
+                                                        onClick={() => setConfig(p => ({ ...p, switchType: sw.id as SwitchType }))}
+                                                        className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-xl border transition-all ${
+                                                            config.switchType === sw.id
+                                                                ? sw.id === 'blue'
+                                                                    ? 'bg-blue-950/40 border-blue-500/60 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
+                                                                    : sw.id === 'brown'
+                                                                    ? 'bg-amber-950/40 border-amber-600/60 text-amber-400 shadow-[0_0_12px_rgba(217,119,6,0.2)]'
+                                                                    : 'bg-rose-950/40 border-rose-500/60 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+                                                                : 'bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                                                        }`}
+                                                    >
+                                                        <span className="text-xs font-mono font-bold">{sw.label}</span>
+                                                        <span className="text-[9px] uppercase tracking-wider opacity-70">{sw.desc}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div>
+                                                <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-2 uppercase tracking-wider">
+                                                    <span>Volume</span>
+                                                    <span className="text-cyan-400">{config.soundVolume}%</span>
+                                                </div>
+                                                <div className="relative h-6 flex items-center">
+                                                    <div className="absolute inset-x-0 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-cyan-500" style={{ width: `${config.soundVolume}%` }} />
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        aria-label="Volume dos switches mecânicos"
+                                                        min="0"
+                                                        max="100"
+                                                        value={config.soundVolume}
+                                                        onChange={e => setConfig(p => ({ ...p, soundVolume: Number(e.target.value) }))}
+                                                        className="relative w-full h-full opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    <div
+                                                        className="absolute h-3 w-3 bg-cyan-400 rounded-full pointer-events-none shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all"
+                                                        style={{ left: `calc(${config.soundVolume}% - 6px)` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="p-4 border-t border-white/5 bg-black/20 text-center">

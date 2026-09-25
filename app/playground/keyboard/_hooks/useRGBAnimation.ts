@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { RGBConfig, KeyRefData } from '../_utils/types';
+import { playSwitchSound } from '../_utils/keyboardAudio';
 
 export const useRGBAnimation = (
     config: RGBConfig,
@@ -18,7 +19,10 @@ export const useRGBAnimation = (
 
     const playClick = useCallback(() => {
         if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(5);
-    }, []);
+        if (config.soundEnabled) {
+            playSwitchSound(config.switchType, config.soundVolume);
+        }
+    }, [config.soundEnabled, config.switchType, config.soundVolume]);
 
     const animate = useCallback(() => {
         timeRef.current += config.speed * 0.5;
@@ -160,6 +164,7 @@ export const useRGBAnimation = (
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.repeat) return;
             const key = e.key.toUpperCase() === ' ' ? 'SPACE' : e.key.toUpperCase();
             const entry = Array.from(keyRefs.current.values()).find(v => v.label === key);
             if (entry) {

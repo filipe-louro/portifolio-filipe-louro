@@ -16,5 +16,8 @@ export const DEFAULT_CONFIG: RGBConfig = {
     brightness: 100,
     primaryHue: 280,
     isPanelOpen: false,
-    isOn: true
+    isOn: true,
+    soundEnabled: true,
+    soundVolume: 70,
+    switchType: 'blue'
 };
