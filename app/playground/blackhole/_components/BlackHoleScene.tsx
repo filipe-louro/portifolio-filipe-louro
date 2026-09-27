@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
+import { Sliders } from 'lucide-react';
 import { useWebGLBlackHole } from '../_hooks/useWebGLBlackHole';
+import { BlackHoleControls } from './BlackHoleControls';
+import { BlackHoleConfig, DEFAULT_CONFIG } from '../_utils/types';
+import { LabCaption } from '@/components/lab-caption';
+import { cn } from '@/lib/utils';
 
 export const BlackHoleScene = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const { error } = useWebGLBlackHole(canvasRef);
+    const [config, setConfig] = useState<BlackHoleConfig>(DEFAULT_CONFIG);
+    const [showControls, setShowControls] = useState(false);
+
+    const { error } = useWebGLBlackHole(canvasRef, config);
+
+    const handleResetConfig = useCallback(() => {
+        setConfig(DEFAULT_CONFIG);
+    }, []);
 
     return (
         <div
@@ -27,9 +39,42 @@ export const BlackHoleScene = () => {
                 className="w-full h-full block"
             />
 
-            <div className="absolute bottom-12 left-12 text-white/50 pointer-events-none select-none mix-blend-screen">
-                <h1 className="text-4xl font-extralight tracking-[0.2em] mb-1 text-orange-100">GARGANTUA</h1>
-                <p className="text-xs uppercase opacity-60 tracking-widest text-orange-200">Simulação Métrica . Classe Supermassiva</p>
+            {/* Z1 — Identidade */}
+            <LabCaption
+                title="GARGANTUA"
+                subtitle="Simulação Métrica . Classe Supermassiva"
+                titleClassName="text-orange-100"
+                subtitleClassName="text-orange-200"
+            />
+
+            {/* Z2 — Ações primárias */}
+            <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={() => setShowControls((prev) => !prev)}
+                    aria-label="Alternar painel de configurações"
+                    className={cn(
+                        'p-3 rounded-full backdrop-blur-md border transition-all active:scale-90',
+                        showControls
+                            ? 'bg-orange-500/25 text-orange-200 border-orange-500/50 shadow-lg shadow-orange-500/10'
+                            : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border-orange-500/20'
+                    )}
+                >
+                    <Sliders size={18} />
+                </button>
+            </div>
+
+            {/* Z3 — Painel de configuração */}
+            <BlackHoleControls
+                config={config}
+                setConfig={setConfig}
+                show={showControls}
+                onResetConfig={handleResetConfig}
+            />
+
+            {/* Z4 — Dica/Status */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-widest text-white/30 pointer-events-none select-none z-10 whitespace-nowrap hidden sm:block">
+                Métrica Kerr • Raio ISCO r=1.65 • WebGL 2.0
             </div>
         </div>
     );

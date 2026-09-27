@@ -13,12 +13,16 @@ export const fragmentShaderSource = `#version 300 es
   uniform vec2 u_resolution;
   uniform float u_time;
   uniform float u_steps;
+  uniform float u_beamIntensity;
+  uniform float u_diskSpeed;
+  uniform float u_cameraTilt;
+  uniform float u_autoRotate;
 
   out vec4 outColor;
 
   #define MAX_STEPS 260
   #define BH_RADIUS 1.5
-  #define DISK_INNER 2.25
+  #define DISK_INNER 1.65
   #define DISK_OUTER 8.0
   #define DISK_THICKNESS 0.12
   #define GRAVITY_STRENGTH 0.4
@@ -29,60 +33,66 @@ export const fragmentShaderSource = `#version 300 es
     return mat2(c, -s, s, c);
   }
 
+  // Dave Hoskins - Hash without Sine (ALU-fast & cross-platform)
   float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
   }
 
-  float noise(vec3 p) {
+  float noise2D(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float fbm2D(vec2 p) {
+    return noise2D(p) * 0.65 + noise2D(p * 2.05) * 0.35;
+  }
+
+  float noise3D(vec3 p) {
     vec3 i = floor(p);
     vec3 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float n = i.x + i.y * 57.0 + i.z * 113.0;
-    return mix(mix(mix(hash(i.xy + vec2(0,0) + vec2(i.z,0)),
-                       hash(i.xy + vec2(1,0) + vec2(i.z,0)), f.x),
-                   mix(hash(i.xy + vec2(0,1) + vec2(i.z,0)),
-                       hash(i.xy + vec2(1,1) + vec2(i.z,0)), f.x), f.y),
-               mix(mix(hash(i.xy + vec2(0,0) + vec2(i.z,1)),
-                       hash(i.xy + vec2(1,0) + vec2(i.z,1)), f.x),
-                   mix(hash(i.xy + vec2(0,1) + vec2(i.z,1)),
-                       hash(i.xy + vec2(1,1) + vec2(i.z,1)), f.x), f.y), f.z);
-  }
-
-  float fbm(vec3 p) {
-    float f = 0.0;
-    float w = 0.5;
-    for (int i = 0; i < 4; i++) {
-      f += w * noise(p);
-      p *= 2.0;
-      w *= 0.5;
-    }
-    return f;
+    return mix(mix(mix(hash(i.xy + vec2(0.0, 0.0) + vec2(i.z, 0.0)),
+                       hash(i.xy + vec2(1.0, 0.0) + vec2(i.z, 0.0)), f.x),
+                   mix(hash(i.xy + vec2(0.0, 1.0) + vec2(i.z, 0.0)),
+                       hash(i.xy + vec2(1.0, 1.0) + vec2(i.z, 0.0)), f.x), f.y),
+               mix(mix(hash(i.xy + vec2(0.0, 0.0) + vec2(i.z, 1.0)),
+                       hash(i.xy + vec2(1.0, 0.0) + vec2(i.z, 1.0)), f.x),
+                   mix(hash(i.xy + vec2(0.0, 1.0) + vec2(i.z, 1.0)),
+                       hash(i.xy + vec2(1.0, 1.0) + vec2(i.z, 1.0)), f.x), f.y), f.z);
   }
 
   float getDiskDensity(vec3 p, float dist) {
     float h = abs(p.y);
-    // espessura perturbada por ruído radial: borda do disco "fofa", não um corte reto
-    float thickness = DISK_THICKNESS * (0.7 + 0.6 * noise(vec3(dist * 2.0, 0.0, u_time * 0.1)));
+    float thickness = DISK_THICKNESS * (0.80 + 0.20 * sin(dist * 5.0 - u_time * 0.3 * u_diskSpeed));
     float density = 1.0 - smoothstep(0.0, thickness, h);
     if (density <= 0.0) return 0.0;
 
-    vec3 q = p;
-    q.xz *= rot(u_time * 0.3 + 6.0 / (dist + 0.1));
+    float phi = atan(p.z, p.x);
+    float kepler = (u_time * 0.35 * u_diskSpeed) + 5.5 / (sqrt(dist) + 0.2);
+    vec2 polar = vec2(dist * 2.2, (phi + kepler) * 2.8);
 
-    // pow no fbm aumenta o contraste: filamentos definidos em vez de névoa
-    float clouds = pow(fbm(q * 1.2), 1.7) * 4.5;
+    float clouds = pow(fbm2D(polar), 1.6) * 3.8;
 
-    // bandas concêntricas dirigidas só pelo raio (sem costura angular)
-    float rings = 0.55 + 0.45 * noise(vec3(dist * 5.0 - u_time * 0.15, 7.31, 2.17));
+    float r1 = sin(dist * 14.0 - u_time * 0.2 * u_diskSpeed);
+    float r2 = sin(dist * 31.0 + u_time * 0.1 * u_diskSpeed);
+    float rings = 0.60 + 0.25 * r1 + 0.15 * r2;
 
     density *= clouds * rings;
-    density *= smoothstep(DISK_INNER, BH_RADIUS * 2.5, dist);
-    density *= 1.0 - smoothstep(DISK_OUTER * 0.6, DISK_OUTER, dist);
+    density *= smoothstep(DISK_INNER, DISK_INNER + 0.85, dist);
+    density *= 1.0 - smoothstep(DISK_OUTER * 0.65, DISK_OUTER, dist);
 
     return max(0.0, density);
   }
 
-  // Fundo intacto — igual à versão deployada. Não mexer.
+  // Fundo com campo estelar e nebulosa
   float starLayer(vec3 dir, float scale, float threshold) {
     vec2 sph = vec2(atan(dir.z, dir.x), asin(clamp(dir.y, -1.0, 1.0)));
     vec2 g = sph * scale;
@@ -102,7 +112,7 @@ export const fragmentShaderSource = `#version 300 es
     col += vec3(1.0, 0.97, 0.92) * starLayer(dir, 48.0, 0.93);
     col += vec3(0.82, 0.88, 1.0) * starLayer(dir, 21.0, 0.955) * 1.4;
 
-    float neb = noise(dir * 3.0) * 0.5 + noise(dir * 7.0) * 0.25;
+    float neb = noise3D(dir * 3.0) * 0.5 + noise3D(dir * 7.0) * 0.25;
     col += vec3(0.10, 0.05, 0.16) * neb * neb;
     return col;
   }
@@ -119,9 +129,10 @@ export const fragmentShaderSource = `#version 300 es
   void main() {
     vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
 
-    float yaw = sin(u_time * 0.05) * 0.10;
-    vec3 ro = vec3(sin(yaw) * 15.0, 2.6 + sin(u_time * 0.07) * 0.15, -cos(yaw) * 15.0);
-    vec3 ta = vec3(0.0);
+    float yaw = u_autoRotate > 0.5 ? sin(u_time * 0.05) * 0.10 : 0.0;
+    float camY = 2.6 + u_cameraTilt * 3.5 + (u_autoRotate > 0.5 ? sin(u_time * 0.07) * 0.15 : 0.0);
+    vec3 ro = vec3(sin(yaw) * 15.0, camY, -cos(yaw) * 15.0);
+    vec3 ta = vec3(0.0, 0.0, 0.0);
 
     vec3 ww = normalize(ta - ro);
     vec3 uu = normalize(cross(ww, vec3(0.0, 1.0, 0.0)));
@@ -155,13 +166,21 @@ export const fragmentShaderSource = `#version 300 es
 
         if (d > BOUNDS_RADIUS && dot(pos, rd) > 0.0) break;
 
-        float stepLen = clamp(d * 0.085, 0.05, 0.28);
+        // Passo adaptativo: saltos largos no vácuo, passos refinados na lâmina do disco
+        float stepLen;
+        bool inDiskZone = abs(pos.y) < 0.35 && d >= (DISK_INNER * 0.9) && d <= (DISK_OUTER * 1.05);
+        if (inDiskZone) {
+          stepLen = clamp(d * 0.024, 0.04, 0.09);
+        } else if (d < 2.8) {
+          stepLen = clamp(d * 0.040, 0.05, 0.12);
+        } else {
+          stepLen = clamp(d * 0.075, 0.22, 0.50);
+        }
+
         if (i == 0) stepLen *= jitter + 0.5;
 
         rd = normalize(rd + normalize(-pos) * (GRAVITY_STRENGTH / (d * d + 0.05)) * stepLen);
 
-        // distância mínima medida no segmento do passo, não só no ponto
-        // amostrado: o minDist por ponto quantizava o anel em degraus
         float tClosest = clamp(-dot(pos, rd), 0.0, stepLen);
         vec3 closestPos = pos + rd * tClosest;
         float dSeg = length(closestPos);
@@ -175,22 +194,33 @@ export const fragmentShaderSource = `#version 300 es
 
         pos += rd * stepLen;
 
-        if (abs(pos.y) < DISK_THICKNESS * 1.3 && d > DISK_INNER && d < DISK_OUTER) {
+        if (abs(pos.y) < DISK_THICKNESS * 1.35 && d > DISK_INNER && d < DISK_OUTER) {
           float dens = getDiskDensity(pos, d);
           if (dens > 0.001) {
             vec3 tangent = vec3(-pos.z, 0.0, pos.x) / max(d, 0.001);
-            float dop = 1.0 + dot(tangent, -rd) * 0.65;
+            float dop = 1.0 + dot(tangent, -rd) * 0.68;
+
+            // Relativistic Doppler beaming com potência 3.5
+            float beaming = pow(max(0.01, dop), 3.5);
 
             vec3 base = diskColor(d);
-            base = mix(base, vec3(0.75, 0.85, 1.25), clamp((dop - 1.0) * 0.6, 0.0, 0.5));
+            // Blueshift térmico no lado em aproximação, redshift no lado em afastamento
+            float blueShift = clamp((dop - 1.0) * 0.75, 0.0, 0.65);
+            base = mix(base, vec3(0.80, 0.95, 1.35), blueShift);
+            float redShift = clamp((1.0 - dop) * 0.55, 0.0, 0.45);
+            base = mix(base, vec3(0.95, 0.22, 0.03), redShift);
 
-            // rim branco-quente na borda interna (ISCO), onde o plasma é mais quente
-            float rim = smoothstep(DISK_INNER + 0.9, DISK_INNER + 0.05, d);
-            base += vec3(1.2, 1.05, 0.9) * rim * 1.5;
+            // Borda interna incandescente no raio ISCO (r = 1.65)
+            float iscoRim = smoothstep(DISK_INNER + 0.65, DISK_INNER + 0.02, d);
+            base += vec3(1.5, 1.35, 1.15) * iscoRim * 2.4;
 
-            vec3 sampleCol = dens * base * 0.08 * (dop * dop) * (stepLen / 0.1);
+            // Feixe equatorial relativístico (fatia radiante frontal quando pos.z < 0.0)
+            float isFront = smoothstep(0.8, -0.8, pos.z);
+            float beamBoost = 1.0 + (u_beamIntensity * 2.2) * isFront;
+
+            vec3 sampleCol = dens * base * 0.09 * beaming * beamBoost * (stepLen / 0.1);
             col += sampleCol * (1.0 - totalDensity);
-            totalDensity += dens * 0.08 * (stepLen / 0.1);
+            totalDensity += dens * 0.09 * beamBoost * (stepLen / 0.1);
 
             if (totalDensity > 0.98) break;
           }
@@ -201,20 +231,17 @@ export const fragmentShaderSource = `#version 300 es
     }
 
     if (hitHorizon) {
-      // raios rasantes (incidência tangencial) ganham o brilho do anel,
-      // raios frontais ficam pretos: suaviza a silhueta sem clarear a sombra
       float grazing = pow(clamp(1.0 - hitIncidence, 0.0, 1.0), 6.0);
-      col += vec3(1.30, 1.15, 1.00) * grazing * 0.9;
+      col += vec3(1.30, 1.15, 1.00) * grazing * 0.9 * (1.0 - totalDensity);
     } else {
       float distFromHorizon = max(0.0, minDist - BH_RADIUS);
       float angle = atan(uv.y, uv.x);
       float horizFactor = pow(abs(cos(angle)), 4.0);
 
-      // anel de fótons em duas camadas: núcleo fino e brilhante + halo morno
       float ringCore = exp(-distFromHorizon * mix(14.0, 6.0, horizFactor));
       float ringHalo = exp(-distFromHorizon * mix(5.0, 1.8, horizFactor));
-      col += (vec3(1.30, 1.15, 1.00) * ringCore * 1.2 + vec3(1.0, 0.72, 0.45) * ringHalo * 0.35)
-             * (1.0 - totalDensity) * 0.8;
+      col += (vec3(1.30, 1.15, 1.00) * ringCore * 1.25 + vec3(1.0, 0.72, 0.45) * ringHalo * 0.35)
+             * (1.0 - totalDensity) * 0.85;
 
       vec3 background = getBackground(rd);
       col += background * (1.0 - min(1.0, totalDensity * 1.5 + ringCore * 2.0));
@@ -222,31 +249,33 @@ export const fragmentShaderSource = `#version 300 es
 
     col += vec3(1.0, 0.6, 0.3) * glow * 0.5;
 
-    // só tonemap aqui: gamma, vinheta e dither ficam no composite,
-    // depois do bloom somar em espaço tonemapped
     col = acesTonemap(col * 1.15);
 
     outColor = vec4(col, 1.0);
   }
 `;
 
-// --- Pós-processamento (bloom em 3 passadas leves a 1/4 da resolução) ---
+// --- Pós-processamento anamórfico e composição ---
 
 export const brightPassShaderSource = `#version 300 es
   precision mediump float;
 
   uniform sampler2D u_scene;
   uniform vec2 u_texelSize;
+  uniform vec2 u_viewportScale;
 
   in vec2 v_uv;
   out vec4 outColor;
 
   void main() {
-    vec3 c = texture(u_scene, v_uv).rgb * 0.25;
-    c += texture(u_scene, v_uv + vec2( u_texelSize.x,  u_texelSize.y)).rgb * 0.1875;
-    c += texture(u_scene, v_uv + vec2(-u_texelSize.x,  u_texelSize.y)).rgb * 0.1875;
-    c += texture(u_scene, v_uv + vec2( u_texelSize.x, -u_texelSize.y)).rgb * 0.1875;
-    c += texture(u_scene, v_uv + vec2(-u_texelSize.x, -u_texelSize.y)).rgb * 0.1875;
+    vec2 uv = v_uv * u_viewportScale;
+    vec2 maxUv = u_viewportScale;
+
+    vec3 c = texture(u_scene, uv).rgb * 0.25;
+    c += texture(u_scene, clamp(uv + vec2( u_texelSize.x,  u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
+    c += texture(u_scene, clamp(uv + vec2(-u_texelSize.x,  u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
+    c += texture(u_scene, clamp(uv + vec2( u_texelSize.x, -u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
+    c += texture(u_scene, clamp(uv + vec2(-u_texelSize.x, -u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
 
     float luma = dot(c, vec3(0.299, 0.587, 0.114));
     outColor = vec4(c * smoothstep(0.45, 0.85, luma), 1.0);
@@ -258,17 +287,20 @@ export const blurShaderSource = `#version 300 es
 
   uniform sampler2D u_texture;
   uniform vec2 u_direction;
+  uniform vec2 u_viewportScale;
 
   in vec2 v_uv;
   out vec4 outColor;
 
   void main() {
-    // gaussiano de 5 leituras com offsets otimizados para filtro bilinear
-    vec3 c = texture(u_texture, v_uv).rgb * 0.2270;
-    c += texture(u_texture, v_uv + u_direction * 1.3846).rgb * 0.3162;
-    c += texture(u_texture, v_uv - u_direction * 1.3846).rgb * 0.3162;
-    c += texture(u_texture, v_uv + u_direction * 3.2308).rgb * 0.0703;
-    c += texture(u_texture, v_uv - u_direction * 3.2308).rgb * 0.0703;
+    vec2 uv = v_uv * u_viewportScale;
+    vec2 maxUv = u_viewportScale;
+
+    vec3 c = texture(u_texture, uv).rgb * 0.2270;
+    c += texture(u_texture, clamp(uv + u_direction * 1.3846, vec2(0.0), maxUv)).rgb * 0.3162;
+    c += texture(u_texture, clamp(uv - u_direction * 1.3846, vec2(0.0), maxUv)).rgb * 0.3162;
+    c += texture(u_texture, clamp(uv + u_direction * 3.2308, vec2(0.0), maxUv)).rgb * 0.0703;
+    c += texture(u_texture, clamp(uv - u_direction * 3.2308, vec2(0.0), maxUv)).rgb * 0.0703;
     outColor = vec4(c, 1.0);
   }
 `;
@@ -280,17 +312,23 @@ export const compositeShaderSource = `#version 300 es
   uniform sampler2D u_bloom;
   uniform vec2 u_resolution;
   uniform float u_time;
+  uniform vec2 u_viewportScaleScene;
+  uniform vec2 u_viewportScaleBloom;
 
   in vec2 v_uv;
   out vec4 outColor;
 
   float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
   }
 
   void main() {
-    vec3 col = texture(u_scene, v_uv).rgb;
-    col += texture(u_bloom, v_uv).rgb * 0.85;
+    vec3 col = texture(u_scene, clamp(v_uv * u_viewportScaleScene, vec2(0.0), u_viewportScaleScene)).rgb;
+    vec3 bloom = texture(u_bloom, clamp(v_uv * u_viewportScaleBloom, vec2(0.0), u_viewportScaleBloom)).rgb;
+
+    col += bloom * 0.90;
 
     col = pow(col, vec3(0.4545));
 
