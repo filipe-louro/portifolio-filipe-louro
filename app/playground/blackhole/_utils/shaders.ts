@@ -12,9 +12,10 @@ export const fragmentShaderSource = `#version 300 es
 
   uniform vec2 u_resolution;
   uniform float u_time;
+  uniform float u_orbitTime;
+  uniform float u_diskTime;
   uniform float u_steps;
   uniform float u_beamIntensity;
-  uniform float u_diskSpeed;
   uniform float u_cameraTilt;
   uniform float u_autoRotate;
 
@@ -63,30 +64,30 @@ export const fragmentShaderSource = `#version 300 es
                        hash(i.xy + vec2(1.0, 0.0) + vec2(i.z, 0.0)), f.x),
                    mix(hash(i.xy + vec2(0.0, 1.0) + vec2(i.z, 0.0)),
                        hash(i.xy + vec2(1.0, 1.0) + vec2(i.z, 0.0)), f.x), f.y),
-               mix(mix(hash(i.xy + vec2(0.0, 0.0) + vec2(i.z, 1.0)),
-                       hash(i.xy + vec2(1.0, 0.0) + vec2(i.z, 1.0)), f.x),
-                   mix(hash(i.xy + vec2(0.0, 1.0) + vec2(i.z, 1.0)),
-                       hash(i.xy + vec2(1.0, 1.0) + vec2(i.z, 1.0)), f.x), f.y), f.z);
+               mix(mix(hash(i.xy + vec2(0.0, 0.0) + vec2(i.z + 1.0, 57.0)),
+                       hash(i.xy + vec2(1.0, 0.0) + vec2(i.z + 1.0, 57.0)), f.x),
+                   mix(hash(i.xy + vec2(0.0, 1.0) + vec2(i.z + 1.0, 57.0)),
+                       hash(i.xy + vec2(1.0, 1.0) + vec2(i.z + 1.0, 57.0)), f.x), f.y), f.z);
   }
 
   float getDiskDensity(vec3 p, float dist) {
     float h = abs(p.y);
-    float thickness = DISK_THICKNESS * (0.80 + 0.20 * sin(dist * 5.0 - u_time * 0.3 * u_diskSpeed));
+    float thickness = DISK_THICKNESS * (0.80 + 0.20 * sin(dist * 5.0 - u_diskTime * 0.3));
     float density = 1.0 - smoothstep(0.0, thickness, h);
     if (density <= 0.0) return 0.0;
 
     float phi = atan(p.z, p.x);
-    float kepler = (u_time * 0.35 * u_diskSpeed) + 5.5 / (sqrt(dist) + 0.2);
+    float kepler = (u_diskTime * 0.35) + 5.5 / (sqrt(dist) + 0.2);
     vec2 polar = vec2(dist * 2.2, (phi + kepler) * 2.8);
 
     float clouds = pow(fbm2D(polar), 1.6) * 3.8;
 
-    float r1 = sin(dist * 14.0 - u_time * 0.2 * u_diskSpeed);
-    float r2 = sin(dist * 31.0 + u_time * 0.1 * u_diskSpeed);
+    float r1 = sin(dist * 14.0 - u_diskTime * 0.2);
+    float r2 = sin(dist * 31.0 + u_diskTime * 0.1);
     float rings = 0.60 + 0.25 * r1 + 0.15 * r2;
 
     density *= clouds * rings;
-    density *= smoothstep(DISK_INNER, DISK_INNER + 0.85, dist);
+    density *= smoothstep(DISK_INNER, DISK_INNER + 0.25, dist);
     density *= 1.0 - smoothstep(DISK_OUTER * 0.65, DISK_OUTER, dist);
 
     return max(0.0, density);
@@ -104,7 +105,7 @@ export const fragmentShaderSource = `#version 300 es
     float d = length(fract(g) - starPos);
     float brightness = (h - threshold) / (1.0 - threshold);
     float twinkle = 0.75 + 0.25 * sin(u_time * 2.0 + h * 40.0);
-    return smoothstep(0.06, 0.0, d) * brightness * twinkle;
+    return (1.0 - smoothstep(0.0, 0.06, d)) * brightness * twinkle;
   }
 
   vec3 getBackground(vec3 dir) {
@@ -129,8 +130,8 @@ export const fragmentShaderSource = `#version 300 es
   void main() {
     vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
 
-    float yaw = u_autoRotate > 0.5 ? sin(u_time * 0.05) * 0.10 : 0.0;
-    float camY = 2.6 + u_cameraTilt * 3.5 + (u_autoRotate > 0.5 ? sin(u_time * 0.07) * 0.15 : 0.0);
+    float yaw = sin(u_orbitTime * 0.05) * 0.10;
+    float camY = 2.6 + u_cameraTilt * 3.5 + sin(u_orbitTime * 0.07) * 0.15;
     vec3 ro = vec3(sin(yaw) * 15.0, camY, -cos(yaw) * 15.0);
     vec3 ta = vec3(0.0, 0.0, 0.0);
 
@@ -193,6 +194,7 @@ export const fragmentShaderSource = `#version 300 es
         }
 
         pos += rd * stepLen;
+        d = length(pos);
 
         if (abs(pos.y) < DISK_THICKNESS * 1.35 && d > DISK_INNER && d < DISK_OUTER) {
           float dens = getDiskDensity(pos, d);
@@ -211,11 +213,11 @@ export const fragmentShaderSource = `#version 300 es
             base = mix(base, vec3(0.95, 0.22, 0.03), redShift);
 
             // Borda interna incandescente no raio ISCO (r = 1.65)
-            float iscoRim = smoothstep(DISK_INNER + 0.65, DISK_INNER + 0.02, d);
+            float iscoRim = 1.0 - smoothstep(DISK_INNER + 0.02, DISK_INNER + 0.45, d);
             base += vec3(1.5, 1.35, 1.15) * iscoRim * 2.4;
 
             // Feixe equatorial relativístico (fatia radiante frontal quando pos.z < 0.0)
-            float isFront = smoothstep(0.8, -0.8, pos.z);
+            float isFront = 1.0 - smoothstep(-0.8, 0.8, pos.z);
             float beamBoost = 1.0 + (u_beamIntensity * 2.2) * isFront;
 
             vec3 sampleCol = dens * base * 0.09 * beaming * beamBoost * (stepLen / 0.1);
@@ -269,13 +271,14 @@ export const brightPassShaderSource = `#version 300 es
 
   void main() {
     vec2 uv = v_uv * u_viewportScale;
-    vec2 maxUv = u_viewportScale;
+    vec2 minUv = 0.5 * u_texelSize;
+    vec2 maxUv = u_viewportScale - 0.5 * u_texelSize;
 
-    vec3 c = texture(u_scene, uv).rgb * 0.25;
-    c += texture(u_scene, clamp(uv + vec2( u_texelSize.x,  u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
-    c += texture(u_scene, clamp(uv + vec2(-u_texelSize.x,  u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
-    c += texture(u_scene, clamp(uv + vec2( u_texelSize.x, -u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
-    c += texture(u_scene, clamp(uv + vec2(-u_texelSize.x, -u_texelSize.y), vec2(0.0), maxUv)).rgb * 0.1875;
+    vec3 c = texture(u_scene, clamp(uv, minUv, maxUv)).rgb * 0.25;
+    c += texture(u_scene, clamp(uv + vec2( u_texelSize.x,  u_texelSize.y), minUv, maxUv)).rgb * 0.1875;
+    c += texture(u_scene, clamp(uv + vec2(-u_texelSize.x,  u_texelSize.y), minUv, maxUv)).rgb * 0.1875;
+    c += texture(u_scene, clamp(uv + vec2( u_texelSize.x, -u_texelSize.y), minUv, maxUv)).rgb * 0.1875;
+    c += texture(u_scene, clamp(uv + vec2(-u_texelSize.x, -u_texelSize.y), minUv, maxUv)).rgb * 0.1875;
 
     float luma = dot(c, vec3(0.299, 0.587, 0.114));
     outColor = vec4(c * smoothstep(0.45, 0.85, luma), 1.0);
@@ -288,19 +291,21 @@ export const blurShaderSource = `#version 300 es
   uniform sampler2D u_texture;
   uniform vec2 u_direction;
   uniform vec2 u_viewportScale;
+  uniform vec2 u_texelSize;
 
   in vec2 v_uv;
   out vec4 outColor;
 
   void main() {
     vec2 uv = v_uv * u_viewportScale;
-    vec2 maxUv = u_viewportScale;
+    vec2 minUv = 0.5 * u_texelSize;
+    vec2 maxUv = u_viewportScale - 0.5 * u_texelSize;
 
-    vec3 c = texture(u_texture, uv).rgb * 0.2270;
-    c += texture(u_texture, clamp(uv + u_direction * 1.3846, vec2(0.0), maxUv)).rgb * 0.3162;
-    c += texture(u_texture, clamp(uv - u_direction * 1.3846, vec2(0.0), maxUv)).rgb * 0.3162;
-    c += texture(u_texture, clamp(uv + u_direction * 3.2308, vec2(0.0), maxUv)).rgb * 0.0703;
-    c += texture(u_texture, clamp(uv - u_direction * 3.2308, vec2(0.0), maxUv)).rgb * 0.0703;
+    vec3 c = texture(u_texture, clamp(uv, minUv, maxUv)).rgb * 0.2270;
+    c += texture(u_texture, clamp(uv + u_direction * 1.3846, minUv, maxUv)).rgb * 0.3162;
+    c += texture(u_texture, clamp(uv - u_direction * 1.3846, minUv, maxUv)).rgb * 0.3162;
+    c += texture(u_texture, clamp(uv + u_direction * 3.2308, minUv, maxUv)).rgb * 0.0703;
+    c += texture(u_texture, clamp(uv - u_direction * 3.2308, minUv, maxUv)).rgb * 0.0703;
     outColor = vec4(c, 1.0);
   }
 `;
@@ -314,6 +319,8 @@ export const compositeShaderSource = `#version 300 es
   uniform float u_time;
   uniform vec2 u_viewportScaleScene;
   uniform vec2 u_viewportScaleBloom;
+  uniform vec2 u_texelSizeScene;
+  uniform vec2 u_texelSizeBloom;
 
   in vec2 v_uv;
   out vec4 outColor;
@@ -325,15 +332,18 @@ export const compositeShaderSource = `#version 300 es
   }
 
   void main() {
-    vec3 col = texture(u_scene, clamp(v_uv * u_viewportScaleScene, vec2(0.0), u_viewportScaleScene)).rgb;
-    vec3 bloom = texture(u_bloom, clamp(v_uv * u_viewportScaleBloom, vec2(0.0), u_viewportScaleBloom)).rgb;
+    vec2 uvScene = clamp(v_uv * u_viewportScaleScene, 0.5 * u_texelSizeScene, u_viewportScaleScene - 0.5 * u_texelSizeScene);
+    vec2 uvBloom = clamp(v_uv * u_viewportScaleBloom, 0.5 * u_texelSizeBloom, u_viewportScaleBloom - 0.5 * u_texelSizeBloom);
+
+    vec3 col = texture(u_scene, uvScene).rgb;
+    vec3 bloom = texture(u_bloom, uvBloom).rgb;
 
     col += bloom * 0.90;
 
     col = pow(col, vec3(0.4545));
 
     vec2 uv = (v_uv - 0.5) * vec2(u_resolution.x / u_resolution.y, 1.0);
-    col *= 1.0 - dot(uv, uv) * 0.6;
+    col *= clamp(1.0 - dot(uv, uv) * 0.45, 0.0, 1.0);
 
     col += (hash(gl_FragCoord.xy * 1.37 + fract(u_time * 7.0)) - 0.5) * (2.0 / 255.0);
 

@@ -10,8 +10,8 @@ import {
 } from '../_utils/shaders';
 import { BlackHoleConfig, QualityPreset, DEFAULT_CONFIG } from '../_utils/types';
 
-const SLOW_FRAME_MS = 19.0;
-const FAST_FRAME_MS = 16.9;
+const SLOW_FRAME_MS = 19.5;
+const FAST_FRAME_MS = 17.2;
 const ADJUST_INTERVAL_MS = 600;
 const BLOOM_DOWNSCALE = 4;
 
@@ -29,23 +29,23 @@ const PRESET_SETTINGS: Record<
     performance: {
         baseSteps: 85,
         minSteps: 60,
-        maxSteps: 95,
+        maxSteps: 100,
         baseScale: 0.65,
-        minScale: 0.50,
+        minScale: 0.45,
         dprCap: 1.0,
     },
     balanced: {
-        baseSteps: 120,
+        baseSteps: 140,
         minSteps: 85,
-        maxSteps: 150,
+        maxSteps: 160,
         baseScale: 0.85,
         minScale: 0.60,
         dprCap: 1.0,
     },
     cinematic: {
-        baseSteps: 190,
-        minSteps: 130,
-        maxSteps: 240,
+        baseSteps: 200,
+        minSteps: 140,
+        maxSteps: 260,
         baseScale: 1.0,
         minScale: 0.75,
         dprCap: 1.25,
@@ -150,9 +150,10 @@ export const useWebGLBlackHole = (
         const sceneUniforms = {
             resolution: gl.getUniformLocation(sceneProgram, 'u_resolution'),
             time: gl.getUniformLocation(sceneProgram, 'u_time'),
+            orbitTime: gl.getUniformLocation(sceneProgram, 'u_orbitTime'),
+            diskTime: gl.getUniformLocation(sceneProgram, 'u_diskTime'),
             steps: gl.getUniformLocation(sceneProgram, 'u_steps'),
             beamIntensity: gl.getUniformLocation(sceneProgram, 'u_beamIntensity'),
-            diskSpeed: gl.getUniformLocation(sceneProgram, 'u_diskSpeed'),
             cameraTilt: gl.getUniformLocation(sceneProgram, 'u_cameraTilt'),
             autoRotate: gl.getUniformLocation(sceneProgram, 'u_autoRotate'),
         };
@@ -165,6 +166,7 @@ export const useWebGLBlackHole = (
             texture: gl.getUniformLocation(blurProgram, 'u_texture'),
             direction: gl.getUniformLocation(blurProgram, 'u_direction'),
             viewportScale: gl.getUniformLocation(blurProgram, 'u_viewportScale'),
+            texelSize: gl.getUniformLocation(blurProgram, 'u_texelSize'),
         };
         const compositeUniforms = {
             scene: gl.getUniformLocation(compositeProgram, 'u_scene'),
@@ -173,6 +175,8 @@ export const useWebGLBlackHole = (
             time: gl.getUniformLocation(compositeProgram, 'u_time'),
             viewportScaleScene: gl.getUniformLocation(compositeProgram, 'u_viewportScaleScene'),
             viewportScaleBloom: gl.getUniformLocation(compositeProgram, 'u_viewportScaleBloom'),
+            texelSizeScene: gl.getUniformLocation(compositeProgram, 'u_texelSizeScene'),
+            texelSizeBloom: gl.getUniformLocation(compositeProgram, 'u_texelSizeBloom'),
         };
 
         const createTarget = (width: number, height: number): Target | null => {
@@ -245,26 +249,31 @@ export const useWebGLBlackHole = (
         let frameCount = 0;
         let lastAdjustTime = startTime;
         let fastCountStreak = 0;
+        let orbitTime = 0;
+        let diskTime = 0;
 
         const adjustQuality = (avgFrameMs: number) => {
             const p = PRESET_SETTINGS[configRef.current.quality] || PRESET_SETTINGS.balanced;
 
             if (avgFrameMs > SLOW_FRAME_MS) {
                 fastCountStreak = 0;
-                // Prioriza reduzir passos do raymarching antes de baixar resolução interna
+                // Prioriza reduzir passos do raymarching (140 -> 110 -> 85) antes de baixar resolução interna
                 if (marchSteps > p.minSteps) {
-                    marchSteps = Math.max(p.minSteps, marchSteps - 25);
+                    marchSteps = Math.max(p.minSteps, marchSteps - 28);
                 } else if (renderScale > p.minScale) {
-                    renderScale = Math.max(p.minScale, renderScale * 0.90);
+                    renderScale = Math.max(p.minScale, renderScale * 0.88);
                 }
-            } else if (avgFrameMs < FAST_FRAME_MS) {
+            } else if (avgFrameMs <= FAST_FRAME_MS) {
                 fastCountStreak++;
-                // Exige estabilidade (2 ciclos) antes de subir qualidade
-                if (fastCountStreak >= 2) {
+                // Exige estabilidade (3 ciclos = 1.8s) antes de recuperar qualidade
+                if (fastCountStreak >= 3) {
                     if (renderScale < p.baseScale) {
                         renderScale = Math.min(p.baseScale, renderScale * 1.06);
-                    } else if (marchSteps < p.maxSteps) {
-                        marchSteps = Math.min(p.maxSteps, marchSteps + 15);
+                    } else if (marchSteps < p.baseSteps) {
+                        marchSteps = Math.min(p.baseSteps, marchSteps + 15);
+                    } else if (avgFrameMs < 14.0 && marchSteps < p.maxSteps) {
+                        // Telas de alta taxa de atualização (> 75Hz / 120Hz) com folga real
+                        marchSteps = Math.min(p.maxSteps, marchSteps + 10);
                     }
                 }
             } else {
@@ -299,6 +308,13 @@ export const useWebGLBlackHole = (
                 frameCount++;
             }
 
+            const dt = Math.min(Math.max(0, frameMs * 0.001), 0.1);
+            const cfg = configRef.current;
+            if (cfg.autoRotate) {
+                orbitTime += dt;
+            }
+            diskTime += dt * cfg.diskSpeed;
+
             if (time - lastAdjustTime > ADJUST_INTERVAL_MS && frameCount >= 10) {
                 adjustQuality(frameTimeAccum / frameCount);
                 frameTimeAccum = 0;
@@ -329,7 +345,6 @@ export const useWebGLBlackHole = (
             const scaleBloomY = activeBloomH / bloomBaseH;
 
             const elapsed = (time - startTime) * 0.001;
-            const cfg = configRef.current;
 
             // 1. Raymarching volumétrico no viewport ativo (zero realocação de FBOs)
             gl.bindFramebuffer(gl.FRAMEBUFFER, sceneTarget.fbo);
@@ -337,9 +352,10 @@ export const useWebGLBlackHole = (
             gl.useProgram(sceneProgram);
             gl.uniform2f(sceneUniforms.resolution, activeW, activeH);
             gl.uniform1f(sceneUniforms.time, elapsed);
+            gl.uniform1f(sceneUniforms.orbitTime, orbitTime);
+            gl.uniform1f(sceneUniforms.diskTime, diskTime);
             gl.uniform1f(sceneUniforms.steps, marchSteps);
             gl.uniform1f(sceneUniforms.beamIntensity, cfg.beamIntensity);
-            gl.uniform1f(sceneUniforms.diskSpeed, cfg.diskSpeed);
             gl.uniform1f(sceneUniforms.cameraTilt, cfg.cameraTilt);
             gl.uniform1f(sceneUniforms.autoRotate, cfg.autoRotate ? 1.0 : 0.0);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -360,6 +376,7 @@ export const useWebGLBlackHole = (
             bindTexture(bloomTargetA.texture, 0, blurUniforms.texture);
             gl.uniform2f(blurUniforms.direction, 4.5 / bloomBaseW, 0.0);
             gl.uniform2f(blurUniforms.viewportScale, scaleBloomX, scaleBloomY);
+            gl.uniform2f(blurUniforms.texelSize, 1.0 / bloomBaseW, 1.0 / bloomBaseH);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             // 4. Bloom vertical sutil
@@ -368,6 +385,7 @@ export const useWebGLBlackHole = (
             bindTexture(bloomTargetB.texture, 0, blurUniforms.texture);
             gl.uniform2f(blurUniforms.direction, 0.0, 0.9 / bloomBaseH);
             gl.uniform2f(blurUniforms.viewportScale, scaleBloomX, scaleBloomY);
+            gl.uniform2f(blurUniforms.texelSize, 1.0 / bloomBaseW, 1.0 / bloomBaseH);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             // 5. Composição final no canvas: cena + flare anamórfico + dither
@@ -380,6 +398,8 @@ export const useWebGLBlackHole = (
             gl.uniform1f(compositeUniforms.time, elapsed);
             gl.uniform2f(compositeUniforms.viewportScaleScene, scaleSceneX, scaleSceneY);
             gl.uniform2f(compositeUniforms.viewportScaleBloom, scaleBloomX, scaleBloomY);
+            gl.uniform2f(compositeUniforms.texelSizeScene, 1.0 / baseW, 1.0 / baseH);
+            gl.uniform2f(compositeUniforms.texelSizeBloom, 1.0 / bloomBaseW, 1.0 / bloomBaseH);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
         };
 

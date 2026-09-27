@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Sliders } from 'lucide-react';
+import { Sliders, RotateCcw, Play, Pause, X } from 'lucide-react';
 import { useWebGLBlackHole } from '../_hooks/useWebGLBlackHole';
 import { BlackHoleControls } from './BlackHoleControls';
 import { BlackHoleConfig, DEFAULT_CONFIG } from '../_utils/types';
@@ -20,10 +20,14 @@ export const BlackHoleScene = () => {
         setConfig(DEFAULT_CONFIG);
     }, []);
 
+    const toggleAutoRotate = useCallback(() => {
+        setConfig((prev) => ({ ...prev, autoRotate: !prev.autoRotate }));
+    }, []);
+
     return (
         <div
             ref={containerRef}
-            className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center font-sans"
+            className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center font-sans select-none"
         >
             {error && (
                 <div className="absolute top-20 left-1/2 -translate-x-1/2 text-red-300 bg-slate-900/90 border border-red-500/30 p-6 rounded-2xl z-50 backdrop-blur-xl max-w-lg text-center shadow-2xl">
@@ -48,21 +52,51 @@ export const BlackHoleScene = () => {
             />
 
             {/* Z2 — Ações primárias */}
-            <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+            <div className="absolute top-6 right-6 z-30 flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={toggleAutoRotate}
+                    aria-label={config.autoRotate ? 'Pausar órbita da câmera' : 'Ativar órbita da câmera'}
+                    className={cn(
+                        'p-3 rounded-full backdrop-blur-md border transition-all active:scale-90 shadow-lg',
+                        config.autoRotate
+                            ? 'bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 border-orange-500/40 shadow-orange-950/20'
+                            : 'bg-white/10 hover:bg-white/20 text-white/50 border-white/10'
+                    )}
+                >
+                    {config.autoRotate ? <Pause size={18} /> : <Play size={18} />}
+                </button>
+                <button
+                    type="button"
+                    onClick={handleResetConfig}
+                    aria-label="Redefinir parâmetros do buraco negro"
+                    className="p-3 rounded-full backdrop-blur-md border transition-all active:scale-90 shadow-lg bg-orange-500/10 hover:bg-orange-500/25 text-orange-300 border-orange-500/20 shadow-orange-950/20"
+                >
+                    <RotateCcw size={18} />
+                </button>
                 <button
                     type="button"
                     onClick={() => setShowControls((prev) => !prev)}
-                    aria-label="Alternar painel de configurações"
+                    aria-label={showControls ? 'Fechar painel de configurações' : 'Abrir painel de configurações'}
                     className={cn(
-                        'p-3 rounded-full backdrop-blur-md border transition-all active:scale-90',
+                        'p-3 rounded-full backdrop-blur-md border transition-all active:scale-90 shadow-lg',
                         showControls
-                            ? 'bg-orange-500/25 text-orange-200 border-orange-500/50 shadow-lg shadow-orange-500/10'
-                            : 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border-orange-500/20'
+                            ? 'bg-orange-500/30 text-white border-orange-500/50 shadow-orange-500/20'
+                            : 'bg-orange-500/10 hover:bg-orange-500/25 text-orange-300 border-orange-500/20'
                     )}
                 >
-                    <Sliders size={18} />
+                    {showControls ? <X size={18} /> : <Sliders size={18} />}
                 </button>
             </div>
+
+            {/* Backdrop para fechar controles em telas menores */}
+            {showControls && (
+                <div
+                    className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm md:hidden"
+                    onClick={() => setShowControls(false)}
+                    aria-hidden="true"
+                />
+            )}
 
             {/* Z3 — Painel de configuração */}
             <BlackHoleControls
