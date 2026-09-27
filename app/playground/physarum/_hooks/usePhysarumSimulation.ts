@@ -3,9 +3,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { PhysarumConfig, FoodNode } from '../_utils/types';
 
-const SIM_W = 320;
-const SIM_H = 220;
-
 export const usePhysarumSimulation = (
     canvasRef: React.RefObject<HTMLCanvasElement | null>,
     containerRef: React.RefObject<HTMLDivElement | null>,
@@ -14,9 +11,11 @@ export const usePhysarumSimulation = (
     const configRef = useRef(config);
     const requestRef = useRef<number>(0);
 
+    const simSizeRef = useRef<{ w: number; h: number }>({ w: 320, h: 220 });
+
     // Buffers de trilha de feromônio
-    const trailRef = useRef<Float32Array>(new Float32Array(SIM_W * SIM_H));
-    const diffuseBufferRef = useRef<Float32Array>(new Float32Array(SIM_W * SIM_H));
+    const trailRef = useRef<Float32Array>(new Float32Array(0));
+    const diffuseBufferRef = useRef<Float32Array>(new Float32Array(0));
 
     // Agentes: x, y, angle (Float32Array compacto)
     const agentsRef = useRef<Float32Array>(new Float32Array(0));
@@ -35,14 +34,25 @@ export const usePhysarumSimulation = (
         isRightDown: boolean;
     }>({ x: -1000, y: -1000, isDown: false, isRightDown: false });
 
-    // Inicializar rede de agentes e nutrientes
+    // Inicializar rede de agentes e nutrientes com proporção isotrópica
     const initSimulation = useCallback(() => {
+        const container = containerRef.current;
+        const cw = container ? container.clientWidth : 1000;
+        const ch = container ? container.clientHeight : 700;
+        const aspect = (cw || 1) / (ch || 1);
+
+        let simW = Math.round(Math.sqrt(70000 * aspect));
+        let simH = Math.round(70000 / simW);
+        simW = Math.max(160, Math.min(480, simW));
+        simH = Math.max(160, Math.min(480, simH));
+        simSizeRef.current = { w: simW, h: simH };
+
         const count = configRef.current.agentCount;
         const agents = new Float32Array(count * 3);
 
-        const cx = SIM_W * 0.5;
-        const cy = SIM_H * 0.5;
-        const radius = Math.min(SIM_W, SIM_H) * 0.38;
+        const cx = simW * 0.5;
+        const cy = simH * 0.5;
+        const radius = Math.min(simW, simH) * 0.38;
 
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -54,18 +64,24 @@ export const usePhysarumSimulation = (
         }
 
         agentsRef.current = agents;
-        trailRef.current.fill(0);
-        diffuseBufferRef.current.fill(0);
+        trailRef.current = new Float32Array(simW * simH);
+        diffuseBufferRef.current = new Float32Array(simW * simH);
+
+        if (offscreenRef.current) {
+            offscreenRef.current.width = simW;
+            offscreenRef.current.height = simH;
+            imageDataRef.current = offscreenRef.current.getContext('2d')!.createImageData(simW, simH);
+        }
 
         // Nós de nutrientes padrão (inspirados no experimento ferroviário de Tóquio)
         foodNodesRef.current = [
-            { x: SIM_W * 0.5, y: SIM_H * 0.5, radius: 10, strength: 6.0 }, // Centro
-            { x: SIM_W * 0.28, y: SIM_H * 0.35, radius: 8, strength: 5.0 }, // Noroeste
-            { x: SIM_W * 0.72, y: SIM_H * 0.32, radius: 8, strength: 5.0 }, // Nordeste
-            { x: SIM_W * 0.35, y: SIM_H * 0.70, radius: 8, strength: 5.0 }, // Sudoeste
-            { x: SIM_W * 0.68, y: SIM_H * 0.68, radius: 8, strength: 5.0 }, // Sudeste
+            { x: simW * 0.5, y: simH * 0.5, radius: 10, strength: 6.0 }, // Centro
+            { x: simW * 0.28, y: simH * 0.35, radius: 8, strength: 5.0 }, // Noroeste
+            { x: simW * 0.72, y: simH * 0.32, radius: 8, strength: 5.0 }, // Nordeste
+            { x: simW * 0.35, y: simH * 0.70, radius: 8, strength: 5.0 }, // Sudoeste
+            { x: simW * 0.68, y: simH * 0.68, radius: 8, strength: 5.0 }, // Sudeste
         ];
-    }, []);
+    }, [containerRef]);
 
     const reset = useCallback(() => {
         initSimulation();
@@ -75,9 +91,10 @@ export const usePhysarumSimulation = (
         const container = containerRef.current;
         if (!container) return;
         const rect = container.getBoundingClientRect();
+        const { w: simW, h: simH } = simSizeRef.current;
 
-        const x = canvasX !== undefined ? (canvasX / rect.width) * SIM_W : Math.random() * (SIM_W - 40) + 20;
-        const y = canvasY !== undefined ? (canvasY / rect.height) * SIM_H : Math.random() * (SIM_H - 40) + 20;
+        const x = canvasX !== undefined ? (canvasX / rect.width) * simW : Math.random() * (simW - 40) + 20;
+        const y = canvasY !== undefined ? (canvasY / rect.height) * simH : Math.random() * (simH - 40) + 20;
 
         foodNodesRef.current.push({
             x,
@@ -112,10 +129,10 @@ export const usePhysarumSimulation = (
         let offscreen = offscreenRef.current;
         if (!offscreen) {
             offscreen = document.createElement('canvas');
-            offscreen.width = SIM_W;
-            offscreen.height = SIM_H;
+            offscreen.width = simSizeRef.current.w;
+            offscreen.height = simSizeRef.current.h;
             offscreenRef.current = offscreen;
-            imageDataRef.current = offscreen.getContext('2d')!.createImageData(SIM_W, SIM_H);
+            imageDataRef.current = offscreen.getContext('2d')!.createImageData(simSizeRef.current.w, simSizeRef.current.h);
         }
 
         let w = 0, h = 0;
@@ -128,6 +145,12 @@ export const usePhysarumSimulation = (
             canvas.height = h * dpr;
             ctx.scale(dpr, dpr);
             ctx.imageSmoothingEnabled = true;
+
+            const aspect = (w || 1) / (h || 1);
+            const currentSimAspect = simSizeRef.current.w / simSizeRef.current.h;
+            if (Math.abs(aspect - currentSimAspect) > 0.3) {
+                initSimulation();
+            }
         };
 
         if (agentsRef.current.length === 0) {
@@ -179,6 +202,7 @@ export const usePhysarumSimulation = (
                 activeColorMode = colorMode;
             }
 
+            const { w: SIM_W, h: SIM_H } = simSizeRef.current;
             const mouse = mouseRef.current;
             const trail = trailRef.current;
             const diffBuf = diffuseBufferRef.current;
@@ -188,7 +212,7 @@ export const usePhysarumSimulation = (
 
             // 1. Interação do ponteiro (plantar nutrientes ou espalhar repelente)
             if (mouse.isDown || mouse.isRightDown) {
-                const rect = container.getBoundingClientRect();
+                const rect = canvas.getBoundingClientRect();
                 const mx = (mouse.x / rect.width) * SIM_W;
                 const my = (mouse.y / rect.height) * SIM_H;
 
@@ -402,9 +426,10 @@ export const usePhysarumSimulation = (
 
         const handlePointerDown = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
 
             mouseRef.current.x = clientX - rect.left;
             mouseRef.current.y = clientY - rect.top;
@@ -419,9 +444,10 @@ export const usePhysarumSimulation = (
 
         const handlePointerMove = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             mouseRef.current.x = clientX - rect.left;
             mouseRef.current.y = clientY - rect.top;
         };
@@ -443,23 +469,27 @@ export const usePhysarumSimulation = (
         render();
 
         window.addEventListener('resize', resize);
-        container.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousedown', handlePointerDown);
         window.addEventListener('mousemove', handlePointerMove);
         window.addEventListener('mouseup', handlePointerUp);
-        container.addEventListener('contextmenu', handleContextMenu);
+        canvas.addEventListener('mouseleave', () => {
+            mouseRef.current.isDown = false;
+            mouseRef.current.isRightDown = false;
+        });
+        canvas.addEventListener('contextmenu', handleContextMenu);
 
-        container.addEventListener('touchstart', handlePointerDown, { passive: true });
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
         window.addEventListener('touchmove', handlePointerMove, { passive: true });
         window.addEventListener('touchend', handlePointerUp, { passive: true });
 
         return () => {
             window.removeEventListener('resize', resize);
-            container.removeEventListener('mousedown', handlePointerDown);
+            canvas.removeEventListener('mousedown', handlePointerDown);
             window.removeEventListener('mousemove', handlePointerMove);
             window.removeEventListener('mouseup', handlePointerUp);
-            container.removeEventListener('contextmenu', handleContextMenu);
+            canvas.removeEventListener('contextmenu', handleContextMenu);
 
-            container.removeEventListener('touchstart', handlePointerDown);
+            canvas.removeEventListener('touchstart', handlePointerDown);
             window.removeEventListener('touchmove', handlePointerMove);
             window.removeEventListener('touchend', handlePointerUp);
 

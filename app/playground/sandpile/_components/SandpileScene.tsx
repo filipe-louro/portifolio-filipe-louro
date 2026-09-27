@@ -77,8 +77,8 @@ export const SandpileScene = () => {
             />
 
             {/* Z4 — dica de interação */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4">
-                Botão esquerdo despeja areia . Botão direito desenha barreiras . Tecla S causa abalo
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4 whitespace-nowrap truncate max-w-[90vw]">
+                Clique para despejar . Botão direito cria barreiras . Tecla S abalo
             </div>
 
             {showControls && (
@@ -90,13 +90,15 @@ export const SandpileScene = () => {
             )}
 
             {/* Z3 — painel de configuração */}
-            <SandpileControls
-                config={config}
-                setConfig={setConfig}
-                show={showControls}
-                onReset={reset}
-                onEarthquake={triggerEarthquake}
-            />
+            <div onPointerDown={(e) => e.stopPropagation()}>
+                <SandpileControls
+                    config={config}
+                    setConfig={setConfig}
+                    show={showControls}
+                    onReset={reset}
+                    onEarthquake={triggerEarthquake}
+                />
+            </div>
         </div>
     );
 };

@@ -276,9 +276,9 @@ export const useJellySimulation = (
                 const edgeLen = Math.sqrt(edgeX * edgeX + edgeY * edgeY);
 
                 if (edgeLen > 0.001) {
-                    // Vetor normal apontando para fora
-                    const nx = -edgeY / edgeLen;
-                    const ny = edgeX / edgeLen;
+                    // Vetor normal apontando para fora em coordenadas de tela (sentido horário)
+                    const nx = edgeY / edgeLen;
+                    const ny = -edgeX / edgeLen;
 
                     const fx = nx * edgeLen * pressureForce * 0.5;
                     const fy = ny * edgeLen * pressureForce * 0.5;
@@ -546,9 +546,10 @@ export const useJellySimulation = (
 
         const handlePointerDown = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             const posX = clientX - rect.left;
             const posY = clientY - rect.top;
 
@@ -589,9 +590,10 @@ export const useJellySimulation = (
 
         const handlePointerMove = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             mouseRef.current.x = clientX - rect.left;
             mouseRef.current.y = clientY - rect.top;
         };
@@ -626,25 +628,25 @@ export const useJellySimulation = (
         render();
 
         window.addEventListener('resize', resize);
-        container.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousedown', handlePointerDown);
         window.addEventListener('mousemove', handlePointerMove);
         window.addEventListener('mouseup', handlePointerUp);
-        container.addEventListener('mouseleave', handleMouseLeave);
-        container.addEventListener('contextmenu', handleContextMenu);
+        canvas.addEventListener('mouseleave', handleMouseLeave);
+        canvas.addEventListener('contextmenu', handleContextMenu);
 
-        container.addEventListener('touchstart', handlePointerDown, { passive: true });
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
         window.addEventListener('touchmove', handlePointerMove, { passive: true });
         window.addEventListener('touchend', handlePointerUp, { passive: true });
 
         return () => {
             window.removeEventListener('resize', resize);
-            container.removeEventListener('mousedown', handlePointerDown);
+            canvas.removeEventListener('mousedown', handlePointerDown);
             window.removeEventListener('mousemove', handlePointerMove);
             window.removeEventListener('mouseup', handlePointerUp);
-            container.removeEventListener('mouseleave', handleMouseLeave);
-            container.removeEventListener('contextmenu', handleContextMenu);
+            canvas.removeEventListener('mouseleave', handleMouseLeave);
+            canvas.removeEventListener('contextmenu', handleContextMenu);
 
-            container.removeEventListener('touchstart', handlePointerDown);
+            canvas.removeEventListener('touchstart', handlePointerDown);
             window.removeEventListener('touchmove', handlePointerMove);
             window.removeEventListener('touchend', handlePointerUp);
 

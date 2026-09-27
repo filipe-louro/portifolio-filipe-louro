@@ -39,14 +39,14 @@ export const useMorphogenesisSimulation = (
         if (!gl || !doubleFbo) return;
 
         const { w, h } = simSizeRef.current;
-        const data = new Uint8Array(w * h * 4);
+        const data = new Float32Array(w * h * 4);
 
-        // Preenche com U = 1.0 (255) e V = 0.0 (0)
+        // Preenche com U = 1.0 e V = 0.0
         for (let i = 0; i < w * h; i++) {
-            data[i * 4] = 255;
-            data[i * 4 + 1] = 0;
-            data[i * 4 + 2] = 0;
-            data[i * 4 + 3] = 255;
+            data[i * 4] = 1.0;
+            data[i * 4 + 1] = 0.0;
+            data[i * 4 + 2] = 0.0;
+            data[i * 4 + 3] = 1.0;
         }
 
         const seedSpot = (cx: number, cy: number, radius: number) => {
@@ -56,8 +56,8 @@ export const useMorphogenesisSimulation = (
                     const dy = y - cy;
                     if (dx * dx + dy * dy < radius * radius) {
                         const idx = (y * w + x) * 4;
-                        data[idx] = Math.floor(128 + Math.random() * 20); // U cai
-                        data[idx + 1] = Math.floor(180 + Math.random() * 50); // V sobe
+                        data[idx] = 0.5 + Math.random() * 0.08; // U cai
+                        data[idx + 1] = 0.7 + Math.random() * 0.2; // V sobe
                     }
                 }
             }
@@ -80,10 +80,20 @@ export const useMorphogenesisSimulation = (
             seedSpot(Math.floor(w * 0.65), Math.floor(h * 0.65), 10);
         }
 
+        const hasFloat = Boolean(
+            gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float')
+        );
+
         // Upload para ambas as texturas do ping-pong
         [doubleFbo.read, doubleFbo.write].forEach((fbo) => {
             gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+            if (hasFloat) {
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.FLOAT, data);
+            } else {
+                const u8 = new Uint8Array(w * h * 4);
+                for (let i = 0; i < w * h * 4; i++) u8[i] = Math.floor(data[i] * 255);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, u8);
+            }
         });
     }, []);
 
@@ -180,6 +190,15 @@ export const useMorphogenesisSimulation = (
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
+        // Suporte a texturas de ponto flutuante para precisão numérica do Gray-Scott
+        const hasFloat = Boolean(
+            gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float')
+        );
+        gl.getExtension('OES_texture_float_linear');
+
+        const internalFormat = hasFloat ? gl.RGBA16F : gl.RGBA8;
+        const texType = hasFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE;
+
         // Criar FBOs Ping-Pong
         const createFBO = (width: number, height: number): FBO => {
             const texture = gl.createTexture()!;
@@ -188,7 +207,7 @@ export const useMorphogenesisSimulation = (
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA, texType, null);
 
             const fbo = gl.createFramebuffer()!;
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -198,8 +217,17 @@ export const useMorphogenesisSimulation = (
         };
 
         const isMobile = window.innerWidth < 768;
-        const simW = isMobile ? 384 : 512;
-        const simH = isMobile ? 384 : 512;
+        const maxDim = isMobile ? 384 : 512;
+        const aspect = container.clientWidth / (container.clientHeight || 1);
+        let simW = maxDim;
+        let simH = maxDim;
+        if (aspect >= 1) {
+            simW = maxDim;
+            simH = Math.max(128, Math.round(maxDim / aspect));
+        } else {
+            simH = maxDim;
+            simW = Math.max(128, Math.round(maxDim * aspect));
+        }
         simSizeRef.current = { w: simW, h: simH };
 
         let fboA = createFBO(simW, simH);
@@ -244,10 +272,10 @@ export const useMorphogenesisSimulation = (
             let mouseAction = 0;
 
             if (mouse.isDown || mouse.isRightDown) {
-                const rect = container.getBoundingClientRect();
+                const rect = canvas.getBoundingClientRect();
                 mouseU = mouse.x / rect.width;
                 mouseV = 1.0 - mouse.y / rect.height; // Inversão WebGL Y
-                mouseRad = (brushRadius / rect.width) * (simW / 512);
+                mouseRad = brushRadius / rect.height;
                 mouseAction = mouse.isRightDown ? -1.0 : 1.0;
             }
 
@@ -300,9 +328,10 @@ export const useMorphogenesisSimulation = (
 
         const handlePointerDown = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
 
             mouseRef.current.x = clientX - rect.left;
             mouseRef.current.y = clientY - rect.top;
@@ -317,9 +346,10 @@ export const useMorphogenesisSimulation = (
 
         const handlePointerMove = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             mouseRef.current.x = clientX - rect.left;
             mouseRef.current.y = clientY - rect.top;
         };
@@ -346,25 +376,25 @@ export const useMorphogenesisSimulation = (
         render();
 
         window.addEventListener('resize', resize);
-        container.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousedown', handlePointerDown);
         window.addEventListener('mousemove', handlePointerMove);
         window.addEventListener('mouseup', handlePointerUp);
-        container.addEventListener('mouseleave', handleMouseLeave);
-        container.addEventListener('contextmenu', handleContextMenu);
+        canvas.addEventListener('mouseleave', handleMouseLeave);
+        canvas.addEventListener('contextmenu', handleContextMenu);
 
-        container.addEventListener('touchstart', handlePointerDown, { passive: true });
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
         window.addEventListener('touchmove', handlePointerMove, { passive: true });
         window.addEventListener('touchend', handlePointerUp, { passive: true });
 
         return () => {
             window.removeEventListener('resize', resize);
-            container.removeEventListener('mousedown', handlePointerDown);
+            canvas.removeEventListener('mousedown', handlePointerDown);
             window.removeEventListener('mousemove', handlePointerMove);
             window.removeEventListener('mouseup', handlePointerUp);
-            container.removeEventListener('mouseleave', handleMouseLeave);
-            container.removeEventListener('contextmenu', handleContextMenu);
+            canvas.removeEventListener('mouseleave', handleMouseLeave);
+            canvas.removeEventListener('contextmenu', handleContextMenu);
 
-            container.removeEventListener('touchstart', handlePointerDown);
+            canvas.removeEventListener('touchstart', handlePointerDown);
             window.removeEventListener('touchmove', handlePointerMove);
             window.removeEventListener('touchend', handlePointerUp);
 

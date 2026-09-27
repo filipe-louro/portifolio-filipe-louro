@@ -62,8 +62,8 @@ export const MorphogenesisScene = () => {
             />
 
             {/* Z4 — dica de interação */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4">
-                Arraste para injetar ativador químico . Botão direito dissolve reação
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4 whitespace-nowrap truncate max-w-[90vw]">
+                Arraste para semear ativador . Botão direito dissolve reação
             </div>
 
             {showControls && (
@@ -75,13 +75,15 @@ export const MorphogenesisScene = () => {
             )}
 
             {/* Z3 — painel de configuração */}
-            <MorphogenesisControls
-                config={config}
-                setConfig={setConfig}
-                show={showControls}
-                onReset={reset}
-                onRandomize={randomize}
-            />
+            <div onPointerDown={(e) => e.stopPropagation()}>
+                <MorphogenesisControls
+                    config={config}
+                    setConfig={setConfig}
+                    show={showControls}
+                    onReset={reset}
+                    onRandomize={randomize}
+                />
+            </div>
         </div>
     );
 };

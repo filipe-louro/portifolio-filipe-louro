@@ -26,6 +26,17 @@ export const PendulumScene = () => {
         }));
     };
 
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePause();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     return (
         <div ref={containerRef} className="relative w-full h-full bg-slate-950 overflow-hidden font-sans select-none">
             <canvas
@@ -84,7 +95,7 @@ export const PendulumScene = () => {
             />
 
             {/* Z4 — dica de interação */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4 whitespace-nowrap truncate max-w-[90vw]">
                 Arraste as massas para posicionar . Mova o pivô para criar ressonância . Espaço pausa
             </div>
 
@@ -97,12 +108,14 @@ export const PendulumScene = () => {
             )}
 
             {/* Z3 — painel de configuração */}
-            <PendulumControls
-                config={config}
-                setConfig={setConfig}
-                show={showControls}
-                onReset={reset}
-            />
+            <div onPointerDown={(e) => e.stopPropagation()}>
+                <PendulumControls
+                    config={config}
+                    setConfig={setConfig}
+                    show={showControls}
+                    onReset={reset}
+                />
+            </div>
         </div>
     );
 };

@@ -177,11 +177,14 @@ export const useSandpileSimulation = (
                 const toppled = abelianToppledRef.current;
                 toppled.fill(0);
 
-                // Despejo contínuo no mouse ou no centro
+                // Despejo contínuo no mouse ou no centro (proporção quadrada preservada)
+                const size = Math.min(w, h) * 0.94;
+                const ox = (w - size) * 0.5;
+                const oy = (h - size) * 0.5;
+
                 if (mouse.isDown) {
-                    const rect = container.getBoundingClientRect();
-                    const gx = Math.floor((mouse.x / rect.width) * ABELIAN_W);
-                    const gy = Math.floor((mouse.y / rect.height) * ABELIAN_H);
+                    const gx = Math.floor(((mouse.x - ox) / size) * ABELIAN_W);
+                    const gy = Math.floor(((mouse.y - oy) / size) * ABELIAN_H);
                     if (gx >= 0 && gx < ABELIAN_W && gy >= 0 && gy < ABELIAN_H) {
                         grid[gy * ABELIAN_W + gx] += flowRate * 4;
                     }
@@ -191,8 +194,8 @@ export const useSandpileSimulation = (
                     grid[centerIdx] += flowRate;
                 }
 
-                // Ciclos de desabamento / toppling iterativo
-                const maxSteps = 450;
+                // Ciclos de desabamento / toppling iterativo equilibrados para 60 FPS fluídos
+                const maxSteps = 50;
 
                 for (let step = 0; step < maxSteps; step++) {
                     let hadTopple = false;
@@ -257,7 +260,7 @@ export const useSandpileSimulation = (
                 ctx.fillStyle = '#020617';
                 ctx.fillRect(0, 0, w, h);
                 ctx.save();
-                ctx.drawImage(offscreen, 0, 0, w, h);
+                ctx.drawImage(offscreen, ox, oy, size, size);
                 ctx.restore();
             } else {
                 // SIMULAÇÃO GRANULAR COM ÂNGULO DE REPOUSO E AVALANCHES
@@ -325,9 +328,9 @@ export const useSandpileSimulation = (
                             continue;
                         }
 
-                        // Deslizamento diagonal na encosta
-                        const canLeft = x > 1 && grid[downLeft] === 0;
-                        const canRight = x < GRID_W - 2 && grid[downRight] === 0;
+                        // Deslizamento diagonal na encosta (não vazar por cantos de barreiras sólidas)
+                        const canLeft = x > 1 && grid[downLeft] === 0 && grid[y * GRID_W + (x - 1)] !== 4;
+                        const canRight = x < GRID_W - 2 && grid[downRight] === 0 && grid[y * GRID_W + (x + 1)] !== 4;
 
                         if (canLeft && canRight) {
                             const target = Math.random() < 0.5 ? downLeft : downRight;
@@ -420,9 +423,10 @@ export const useSandpileSimulation = (
 
         const handlePointerDown = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             const posX = clientX - rect.left;
             const posY = clientY - rect.top;
 
@@ -439,9 +443,10 @@ export const useSandpileSimulation = (
 
         const handlePointerMove = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             mouseRef.current.x = clientX - rect.left;
             mouseRef.current.y = clientY - rect.top;
         };
@@ -471,24 +476,24 @@ export const useSandpileSimulation = (
 
         window.addEventListener('resize', resize);
         window.addEventListener('keydown', handleKeyDown);
-        container.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousedown', handlePointerDown);
         window.addEventListener('mousemove', handlePointerMove);
         window.addEventListener('mouseup', handlePointerUp);
-        container.addEventListener('contextmenu', handleContextMenu);
+        canvas.addEventListener('contextmenu', handleContextMenu);
 
-        container.addEventListener('touchstart', handlePointerDown, { passive: true });
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
         window.addEventListener('touchmove', handlePointerMove, { passive: true });
         window.addEventListener('touchend', handlePointerUp, { passive: true });
 
         return () => {
             window.removeEventListener('resize', resize);
             window.removeEventListener('keydown', handleKeyDown);
-            container.removeEventListener('mousedown', handlePointerDown);
+            canvas.removeEventListener('mousedown', handlePointerDown);
             window.removeEventListener('mousemove', handlePointerMove);
             window.removeEventListener('mouseup', handlePointerUp);
-            container.removeEventListener('contextmenu', handleContextMenu);
+            canvas.removeEventListener('contextmenu', handleContextMenu);
 
-            container.removeEventListener('touchstart', handlePointerDown);
+            canvas.removeEventListener('touchstart', handlePointerDown);
             window.removeEventListener('touchmove', handlePointerMove);
             window.removeEventListener('touchend', handlePointerUp);
 

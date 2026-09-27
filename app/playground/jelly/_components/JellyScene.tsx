@@ -62,8 +62,8 @@ export const JellyScene = () => {
             />
 
             {/* Z4 — dica de interação */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4">
-                Arraste para arremessar . Pressione para comprimir . Botão direito empurra
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4 whitespace-nowrap truncate max-w-[90vw]">
+                Arraste a gelatina . Pressione para comprimir . Botão direito empurra
             </div>
 
             {showControls && (
@@ -75,13 +75,15 @@ export const JellyScene = () => {
             )}
 
             {/* Z3 — painel de configuração */}
-            <JellyControls
-                config={config}
-                setConfig={setConfig}
-                show={showControls}
-                onReset={reset}
-                onLaunch={launchJelly}
-            />
+            <div onPointerDown={(e) => e.stopPropagation()}>
+                <JellyControls
+                    config={config}
+                    setConfig={setConfig}
+                    show={showControls}
+                    onReset={reset}
+                    onLaunch={launchJelly}
+                />
+            </div>
         </div>
     );
 };

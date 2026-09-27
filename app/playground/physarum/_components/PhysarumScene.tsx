@@ -62,8 +62,8 @@ export const PhysarumScene = () => {
             />
 
             {/* Z4 — dica de interação */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4">
-                Botão esquerdo planta nutrientes de açúcar . Botão direito espalha repelente salino
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] uppercase tracking-widest text-white/30 text-center px-4 whitespace-nowrap truncate max-w-[90vw]">
+                Clique para alimentar . Botão direito repele
             </div>
 
             {showControls && (
@@ -75,13 +75,15 @@ export const PhysarumScene = () => {
             )}
 
             {/* Z3 — painel de configuração */}
-            <PhysarumControls
-                config={config}
-                setConfig={setConfig}
-                show={showControls}
-                onReset={reset}
-                onAddFood={() => addFoodNode()}
-            />
+            <div onPointerDown={(e) => e.stopPropagation()}>
+                <PhysarumControls
+                    config={config}
+                    setConfig={setConfig}
+                    show={showControls}
+                    onReset={reset}
+                    onAddFood={() => addFoodNode()}
+                />
+            </div>
         </div>
     );
 };

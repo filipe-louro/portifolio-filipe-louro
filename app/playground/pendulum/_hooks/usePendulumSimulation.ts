@@ -44,6 +44,7 @@ export const usePendulumSimulation = (
     const isDraggingPivotRef = useRef(false);
     const isDraggingBob1Ref = useRef(false);
     const isDraggingBob2Ref = useRef(false);
+    const isDraggingBob3Ref = useRef(false);
 
     // Estado dos pêndulos
     const doubleInstancesRef = useRef<DoubleState[]>([]);
@@ -297,6 +298,30 @@ export const usePendulumSimulation = (
             if (isDraggingPivotRef.current) {
                 pivot.x = mouse.x;
                 pivot.y = mouse.y;
+            } else if (mode === 'triple') {
+                const st = tripleStateRef.current;
+                if (isDraggingBob1Ref.current) {
+                    const dx = mouse.x - pivot.x;
+                    const dy = mouse.y - pivot.y;
+                    st.theta1 = Math.atan2(dx, dy);
+                    st.omega1 = 0;
+                } else if (isDraggingBob2Ref.current) {
+                    const x1 = pivot.x + length1 * Math.sin(st.theta1);
+                    const y1 = pivot.y + length1 * Math.cos(st.theta1);
+                    const dx = mouse.x - x1;
+                    const dy = mouse.y - y1;
+                    st.theta2 = Math.atan2(dx, dy);
+                    st.omega2 = 0;
+                } else if (isDraggingBob3Ref.current) {
+                    const x1 = pivot.x + length1 * Math.sin(st.theta1);
+                    const y1 = pivot.y + length1 * Math.cos(st.theta1);
+                    const x2 = x1 + length2 * Math.sin(st.theta2);
+                    const y2 = y1 + length2 * Math.cos(st.theta2);
+                    const dx = mouse.x - x2;
+                    const dy = mouse.y - y2;
+                    st.theta3 = Math.atan2(dx, dy);
+                    st.omega3 = 0;
+                }
             } else if (isDraggingBob1Ref.current && doubleInstancesRef.current.length > 0) {
                 const dx = mouse.x - pivot.x;
                 const dy = mouse.y - pivot.y;
@@ -324,11 +349,17 @@ export const usePendulumSimulation = (
             const dt = 0.02 / 8;
 
             if (trailCtx && trailCanvas) {
-                // Esmorecimento do rastro (fade)
+                // Esmorecimento do rastro (fade) apenas quando não pausado
+                if (!isPaused) {
+                    trailCtx.save();
+                    trailCtx.scale(dpr, dpr);
+                    trailCtx.fillStyle = `rgba(2, 6, 23, ${1 - trailPersistence})`;
+                    trailCtx.fillRect(0, 0, w, h);
+                    trailCtx.restore();
+                }
+
                 trailCtx.save();
                 trailCtx.scale(dpr, dpr);
-                trailCtx.fillStyle = `rgba(2, 6, 23, ${1 - trailPersistence})`;
-                trailCtx.fillRect(0, 0, w, h);
 
                 if (mode === 'triple') {
                     const st = tripleStateRef.current;
@@ -562,13 +593,18 @@ export const usePendulumSimulation = (
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 1.2;
                 ctx.beginPath();
+                let prevNormTheta: number | null = null;
                 for (let i = 0; i < hist.length; i++) {
                     const normTheta = (((hist[i].theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
                     const px = boxX + boxW / 2 + (normTheta / Math.PI) * (boxW * 0.4);
                     const py = boxY + boxH / 2 - Math.max(-1, Math.min(1, hist[i].omega / 15)) * (boxH * 0.38);
 
-                    if (i === 0) ctx.moveTo(px, py);
-                    else ctx.lineTo(px, py);
+                    if (i === 0 || (prevNormTheta !== null && Math.abs(normTheta - prevNormTheta) > Math.PI)) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                    prevNormTheta = normTheta;
                 }
                 ctx.stroke();
                 ctx.restore();
@@ -579,9 +615,10 @@ export const usePendulumSimulation = (
 
         const handlePointerDown = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             const posX = clientX - rect.left;
             const posY = clientY - rect.top;
 
@@ -597,8 +634,28 @@ export const usePendulumSimulation = (
                 return;
             }
 
-            const { length1, length2 } = configRef.current;
-            if (doubleInstancesRef.current.length > 0) {
+            const { length1, length2, length3, mode } = configRef.current;
+            if (mode === 'triple') {
+                const st = tripleStateRef.current;
+                const x1 = pivot.x + length1 * Math.sin(st.theta1);
+                const y1 = pivot.y + length1 * Math.cos(st.theta1);
+                const x2 = x1 + length2 * Math.sin(st.theta2);
+                const y2 = y1 + length2 * Math.cos(st.theta2);
+                const x3 = x2 + length3 * Math.sin(st.theta3);
+                const y3 = y2 + length3 * Math.cos(st.theta3);
+
+                const d1Sq = (posX - x1) ** 2 + (posY - y1) ** 2;
+                const d2Sq = (posX - x2) ** 2 + (posY - y2) ** 2;
+                const d3Sq = (posX - x3) ** 2 + (posY - y3) ** 2;
+
+                if (d3Sq < 35 * 35) {
+                    isDraggingBob3Ref.current = true;
+                } else if (d2Sq < 35 * 35) {
+                    isDraggingBob2Ref.current = true;
+                } else if (d1Sq < 35 * 35) {
+                    isDraggingBob1Ref.current = true;
+                }
+            } else if (doubleInstancesRef.current.length > 0) {
                 const lead = doubleInstancesRef.current[0];
                 const x1 = pivot.x + length1 * Math.sin(lead.theta1);
                 const y1 = pivot.y + length1 * Math.cos(lead.theta1);
@@ -618,9 +675,10 @@ export const usePendulumSimulation = (
 
         const handlePointerMove = (e: MouseEvent | TouchEvent) => {
             const isTouch = 'touches' in e;
+            if (isTouch && (!e.touches || e.touches.length === 0)) return;
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-            const rect = container.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect();
             mouseRef.current.x = clientX - rect.left;
             mouseRef.current.y = clientY - rect.top;
         };
@@ -630,36 +688,28 @@ export const usePendulumSimulation = (
             isDraggingPivotRef.current = false;
             isDraggingBob1Ref.current = false;
             isDraggingBob2Ref.current = false;
-        };
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                configRef.current.isPaused = !configRef.current.isPaused;
-            }
+            isDraggingBob3Ref.current = false;
         };
 
         resize();
         render();
 
         window.addEventListener('resize', resize);
-        window.addEventListener('keydown', handleKeyDown);
-        container.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousedown', handlePointerDown);
         window.addEventListener('mousemove', handlePointerMove);
         window.addEventListener('mouseup', handlePointerUp);
 
-        container.addEventListener('touchstart', handlePointerDown, { passive: true });
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
         window.addEventListener('touchmove', handlePointerMove, { passive: true });
         window.addEventListener('touchend', handlePointerUp, { passive: true });
 
         return () => {
             window.removeEventListener('resize', resize);
-            window.removeEventListener('keydown', handleKeyDown);
-            container.removeEventListener('mousedown', handlePointerDown);
+            canvas.removeEventListener('mousedown', handlePointerDown);
             window.removeEventListener('mousemove', handlePointerMove);
             window.removeEventListener('mouseup', handlePointerUp);
 
-            container.removeEventListener('touchstart', handlePointerDown);
+            canvas.removeEventListener('touchstart', handlePointerDown);
             window.removeEventListener('touchmove', handlePointerMove);
             window.removeEventListener('touchend', handlePointerUp);
 
