@@ -353,18 +353,24 @@ export const useRipplesSimulation = (
             } else if (cfg.tool === 'ripple') {
                 // Splash ripple
                 const uCurr = uCurrentRef.current;
+                const uPrev = uPrevRef.current;
                 const r = 4;
                 for (let dy = -r; dy <= r; dy++) {
                     for (let dx = -r; dx <= r; dx++) {
                         const nx = gx + dx;
                         const ny = gy + dy;
                         if (nx >= 1 && nx < GW - 1 && ny >= 1 && ny < GH - 1) {
-                            uCurr[ny * GW + nx] += 4.5 * Math.exp(-(dx * dx + dy * dy) / 4);
+                            const added = 3.8 * Math.exp(-(dx * dx + dy * dy) / 4);
+                            const idx = ny * GW + nx;
+                            uCurr[idx] += added;
+                            uPrev[idx] += added * 0.5;
                         }
                     }
                 }
             } else if (cfg.tool === 'wall') {
-                // Toggle obstacle wall
+                // Toggle obstacle wall (right-click or shift-click erases)
+                const isErase = ('button' in e && e.button === 2) || ('shiftKey' in e && e.shiftKey);
+                const wallVal = isErase ? 0 : 1;
                 const walls = wallsRef.current;
                 const r = 2;
                 for (let dy = -r; dy <= r; dy++) {
@@ -372,7 +378,7 @@ export const useRipplesSimulation = (
                         const nx = gx + dx;
                         const ny = gy + dy;
                         if (nx >= 1 && nx < GW - 1 && ny >= 1 && ny < GH - 1) {
-                            walls[ny * GW + nx] = 1;
+                            walls[ny * GW + nx] = wallVal;
                         }
                     }
                 }
@@ -404,10 +410,15 @@ export const useRipplesSimulation = (
                 const cfg = configRef.current;
                 if (cfg.tool === 'ripple') {
                     const uCurr = uCurrentRef.current;
+                    const uPrev = uPrevRef.current;
                     if (gx >= 1 && gx < GW - 1 && gy >= 1 && gy < GH - 1) {
-                        uCurr[gy * GW + gx] += 2.0;
+                        const idx = gy * GW + gx;
+                        uCurr[idx] += 1.8;
+                        uPrev[idx] += 0.9;
                     }
                 } else if (cfg.tool === 'wall') {
+                    const isErase = ('button' in e && e.button === 2) || ('shiftKey' in e && e.shiftKey);
+                    const wallVal = isErase ? 0 : 1;
                     const walls = wallsRef.current;
                     const r = 2;
                     for (let dy = -r; dy <= r; dy++) {
@@ -415,7 +426,7 @@ export const useRipplesSimulation = (
                             const nx = gx + dx;
                             const ny = gy + dy;
                             if (nx >= 1 && nx < GW - 1 && ny >= 1 && ny < GH - 1) {
-                                walls[ny * GW + nx] = 1;
+                                walls[ny * GW + nx] = wallVal;
                             }
                         }
                     }
@@ -428,6 +439,10 @@ export const useRipplesSimulation = (
             draggedEmitterRef.current = null;
         };
 
+        const handleContextMenu = (e: MouseEvent) => {
+            e.preventDefault();
+        };
+
         resize();
         render();
 
@@ -435,6 +450,7 @@ export const useRipplesSimulation = (
         canvas.addEventListener('mousedown', handlePointerDown);
         window.addEventListener('mousemove', handlePointerMove);
         window.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('contextmenu', handleContextMenu);
 
         canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
         window.addEventListener('touchmove', handlePointerMove, { passive: true });
@@ -445,6 +461,7 @@ export const useRipplesSimulation = (
             canvas.removeEventListener('mousedown', handlePointerDown);
             window.removeEventListener('mousemove', handlePointerMove);
             window.removeEventListener('mouseup', handlePointerUp);
+            canvas.removeEventListener('contextmenu', handleContextMenu);
 
             canvas.removeEventListener('touchstart', handlePointerDown);
             window.removeEventListener('touchmove', handlePointerMove);

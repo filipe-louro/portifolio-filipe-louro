@@ -254,8 +254,8 @@ export const LAB_ITEMS: LabItem[] = [
         shortTitle: 'Ferrofluid Spikes',
         description: 'Instabilidade magnética de Rosensweig em tempo real com espinhos cônicos afiados, reflexão metálica e pólos magnéticos dinâmicos.',
         action: 'Ativar Campo Magnético',
-        category: 'optics',
-        categoryLabel: 'Óptica, Ondas & Caos',
+        category: 'physics',
+        categoryLabel: 'Física & Gravidade',
         tags: ['Canvas 2D', 'Instabilidade Rosensweig', 'Magnetismo'],
         accentText: 'text-cyan-400',
         accentBorder: 'hover:border-cyan-500/50',
@@ -274,7 +274,7 @@ export const LAB_ITEMS: LabItem[] = [
         accentText: 'text-pink-400',
         accentBorder: 'hover:border-pink-500/50',
         accentBg: 'bg-pink-500/10',
-        iconName: 'Dye',
+        iconName: 'Pipette',
     },
     {
         slug: 'attractor',
@@ -302,7 +302,7 @@ export const LAB_ITEMS: LabItem[] = [
         accentText: 'text-sky-400',
         accentBorder: 'hover:border-sky-500/50',
         accentBg: 'bg-sky-500/10',
-        iconName: 'WaterWave',
+        iconName: 'Waves',
     },
     {
         slug: 'galaxy',
@@ -316,10 +316,14 @@ export const LAB_ITEMS: LabItem[] = [
         accentText: 'text-blue-400',
         accentBorder: 'hover:border-blue-500/50',
         accentBg: 'bg-blue-500/10',
-        iconName: 'Galaxy',
+        iconName: 'Telescope',
     },
 ];
 
 export const EXPERIMENT_MAP: Record<string, LabItem> = Object.fromEntries(
     LAB_ITEMS.map((item) => [item.slug, item])
+);
+
+export const EXPERIMENT_NAMES: Record<string, string> = Object.fromEntries(
+    LAB_ITEMS.map((item) => [item.slug, item.shortTitle])
 );

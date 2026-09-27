@@ -39,6 +39,9 @@ export const useFerrofluidSimulation = (
     const VERTICES = 180;
     const perimeterRadiiRef = useRef<Float32Array>(new Float32Array(VERTICES));
     const perimeterVelRef = useRef<Float32Array>(new Float32Array(VERTICES));
+    const targetRadiiRef = useRef<Float32Array>(new Float32Array(VERTICES));
+    const polyXRef = useRef<Float32Array>(new Float32Array(VERTICES));
+    const polyYRef = useRef<Float32Array>(new Float32Array(VERTICES));
 
     // Satellite micro-droplets
     const dropletsRef = useRef<FluidParticle[]>([]);
@@ -133,6 +136,15 @@ export const useFerrofluidSimulation = (
 
             if (fluidCoreRef.current.x === 0 && fluidCoreRef.current.y === 0) {
                 initScene(width, height);
+            } else {
+                const core = fluidCoreRef.current;
+                core.baseRadius = Math.min(width, height) * 0.16;
+                core.x = Math.max(core.baseRadius, Math.min(width - core.baseRadius, core.x));
+                core.y = Math.max(core.baseRadius, Math.min(height - core.baseRadius, core.y));
+                for (const pole of polesRef.current) {
+                    pole.x = Math.max(pole.radius, Math.min(width - pole.radius, pole.x));
+                    pole.y = Math.max(pole.radius, Math.min(height - pole.radius, pole.y));
+                }
             }
         };
 
@@ -231,7 +243,7 @@ export const useFerrofluidSimulation = (
             // 3. Compute Rosensweig perimeter spikes
             const radii = perimeterRadiiRef.current;
             const vels = perimeterVelRef.current;
-            const targetRadii = new Float32Array(VERTICES);
+            const targetRadii = targetRadiiRef.current;
 
             const baseR = core.baseRadius;
             const B_CRITICAL = 0.45;
@@ -275,30 +287,30 @@ export const useFerrofluidSimulation = (
 
             // 4. Render Ferrofluid body
             ctx.save();
-            const polyPoints: { x: number; y: number }[] = [];
+            const polyX = polyXRef.current;
+            const polyY = polyYRef.current;
             for (let i = 0; i < VERTICES; i++) {
                 const theta = (i / VERTICES) * Math.PI * 2;
                 const r = radii[i];
-                polyPoints.push({
-                    x: core.x + Math.cos(theta) * r,
-                    y: core.y + Math.sin(theta) * r,
-                });
+                polyX[i] = core.x + Math.cos(theta) * r;
+                polyY[i] = core.y + Math.sin(theta) * r;
             }
 
             // Path creation with smooth bezier / spline
             ctx.beginPath();
-            if (polyPoints.length > 0) {
-                const first = polyPoints[0];
-                const last = polyPoints[polyPoints.length - 1];
-                ctx.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+            const firstX = polyX[0];
+            const firstY = polyY[0];
+            const lastX = polyX[VERTICES - 1];
+            const lastY = polyY[VERTICES - 1];
+            ctx.moveTo((lastX + firstX) * 0.5, (lastY + firstY) * 0.5);
 
-                for (let i = 0; i < polyPoints.length; i++) {
-                    const current = polyPoints[i];
-                    const next = polyPoints[(i + 1) % polyPoints.length];
-                    const midX = (current.x + next.x) / 2;
-                    const midY = (current.y + next.y) / 2;
-                    ctx.quadraticCurveTo(current.x, current.y, midX, midY);
-                }
+            for (let i = 0; i < VERTICES; i++) {
+                const currentX = polyX[i];
+                const currentY = polyY[i];
+                const nextIdx = (i + 1) % VERTICES;
+                const nextX = polyX[nextIdx];
+                const nextY = polyY[nextIdx];
+                ctx.quadraticCurveTo(currentX, currentY, (currentX + nextX) * 0.5, (currentY + nextY) * 0.5);
             }
             ctx.closePath();
 

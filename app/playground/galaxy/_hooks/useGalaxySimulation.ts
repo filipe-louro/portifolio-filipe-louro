@@ -426,6 +426,11 @@ export const useGalaxySimulation = (
             ctx.save();
             ctx.globalCompositeOperation = 'screen';
 
+            const GALAXY_COLORS = ['#38bdf8', '#fbbf24', '#f43f5e'];
+            const GALAXY_TRAIL_COLORS = ['rgba(56, 189, 248, 0.4)', 'rgba(251, 191, 36, 0.4)', 'rgba(244, 63, 94, 0.4)'];
+
+            let currentGId = -1;
+
             for (let i = 0; i < stars.length; i++) {
                 const s = stars[i];
 
@@ -441,34 +446,38 @@ export const useGalaxySimulation = (
                 const sx = cx + x1 * scale * zFactor;
                 const sy = cy - y1 * scale * zFactor;
 
-                // Color by galaxy origin and velocity
-                let starColor = '';
-                if (s.galaxyId === 0) {
-                    starColor = 'rgba(56, 189, 248, '; // cyan blue
-                } else if (s.galaxyId === 1) {
-                    starColor = 'rgba(251, 191, 36, '; // gold amber
-                } else {
-                    starColor = 'rgba(244, 63, 94, ';  // rose pink
+                if (s.galaxyId !== currentGId) {
+                    if (currentGId !== -1) {
+                        if (cfg.showVelocityTrails) ctx.stroke();
+                        else ctx.fill();
+                    }
+                    currentGId = s.galaxyId;
+                    const gIdx = Math.max(0, currentGId % GALAXY_COLORS.length);
+                    if (cfg.showVelocityTrails) {
+                        ctx.strokeStyle = GALAXY_TRAIL_COLORS[gIdx];
+                        ctx.lineWidth = 1.2;
+                    } else {
+                        ctx.fillStyle = GALAXY_COLORS[gIdx];
+                    }
+                    ctx.beginPath();
                 }
 
-                const alpha = Math.min(1.0, s.brightness * zFactor);
-                ctx.fillStyle = `${starColor}${alpha.toFixed(2)})`;
-
                 if (cfg.showVelocityTrails && s.prevX > 0) {
-                    ctx.strokeStyle = `${starColor}${(alpha * 0.5).toFixed(2)})`;
-                    ctx.lineWidth = s.size * zFactor;
-                    ctx.beginPath();
                     ctx.moveTo(s.prevX, s.prevY);
                     ctx.lineTo(sx, sy);
-                    ctx.stroke();
                 } else {
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, Math.max(0.7, s.size * zFactor * 0.8), 0, Math.PI * 2);
-                    ctx.fill();
+                    const r = Math.max(0.7, s.size * zFactor * 0.7);
+                    ctx.moveTo(sx + r, sy);
+                    ctx.arc(sx, sy, r, 0, Math.PI * 2);
                 }
 
                 s.prevX = sx;
                 s.prevY = sy;
+            }
+
+            if (currentGId !== -1) {
+                if (cfg.showVelocityTrails) ctx.stroke();
+                else ctx.fill();
             }
 
             ctx.restore();

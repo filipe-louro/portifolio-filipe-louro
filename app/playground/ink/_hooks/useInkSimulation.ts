@@ -51,18 +51,19 @@ export const useInkSimulation = (
 
     const paletteIndexRef = useRef(0);
     const lastAutoDropRef = useRef(0);
+    const lastStreamTimeRef = useRef(0);
 
     useEffect(() => {
         configRef.current = config;
     }, [config]);
 
-    const injectDroplet = useCallback((x: number, y: number, colorOverride?: [number, number, number], customVy = 1.8) => {
+    const injectDroplet = useCallback((x: number, y: number, colorOverride?: [number, number, number], customVy = 1.8, countOverride?: number) => {
         const cfg = configRef.current;
         const pal = INK_PALETTES[cfg.palette] || INK_PALETTES.aurora;
         const color = colorOverride || pal.colors[paletteIndexRef.current % pal.colors.length];
         paletteIndexRef.current++;
 
-        const particleCount = Math.floor(180 * cfg.dropletSize);
+        const particleCount = countOverride ?? Math.floor(180 * cfg.dropletSize);
         const newParticles: DyeParticle[] = [];
 
         // Center cluster of dye
@@ -86,30 +87,38 @@ export const useInkSimulation = (
         }
 
         // Create Counter-Rotating Vortex Dipole pair (Rayleigh-Taylor plume engine)
-        const vortexSep = baseRadius * 0.75;
-        const gamma = 32 * cfg.vorticity;
-        const newVortices: VortexPoint[] = [
-            {
-                x: x - vortexSep,
-                y: y,
-                vx: 0,
-                vy: customVy * 0.8,
-                strength: -gamma, // counter-clockwise left
-                radius: 28,
-                decay: 0.994,
-                life: 1,
-            },
-            {
-                x: x + vortexSep,
-                y: y,
-                vx: 0,
-                vy: customVy * 0.8,
-                strength: gamma, // clockwise right
-                radius: 28,
-                decay: 0.994,
-                life: 1,
-            },
-        ];
+        const shouldSpawnVortex = countOverride === undefined || Math.random() < 0.35;
+        if (shouldSpawnVortex) {
+            const vortexSep = baseRadius * 0.75;
+            const gamma = 32 * cfg.vorticity;
+            const newVortices: VortexPoint[] = [
+                {
+                    x: x - vortexSep,
+                    y: y,
+                    vx: 0,
+                    vy: customVy * 0.8,
+                    strength: -gamma, // counter-clockwise left
+                    radius: 28,
+                    decay: 0.994,
+                    life: 1,
+                },
+                {
+                    x: x + vortexSep,
+                    y: y,
+                    vx: 0,
+                    vy: customVy * 0.8,
+                    strength: gamma, // clockwise right
+                    radius: 28,
+                    decay: 0.994,
+                    life: 1,
+                },
+            ];
+
+            if (vorticesRef.current.length > 50) {
+                vorticesRef.current.splice(0, newVortices.length);
+            }
+            vorticesRef.current.push(...newVortices);
+        }
 
         // Cap arrays to ensure fast performance
         const maxP = 7000;
@@ -117,11 +126,6 @@ export const useInkSimulation = (
             particlesRef.current.splice(0, newParticles.length);
         }
         particlesRef.current.push(...newParticles);
-
-        if (vorticesRef.current.length > 50) {
-            vorticesRef.current.splice(0, newVortices.length);
-        }
-        vorticesRef.current.push(...newVortices);
     }, []);
 
     const reset = useCallback(() => {
@@ -194,9 +198,12 @@ export const useInkSimulation = (
                 }
             }
 
-            // 2. Continuous stream tool
+            // 2. Continuous stream tool (throttled to ~20Hz with smaller stream batch)
             if (mouseRef.current.isDown && cfg.tool === 'stream') {
-                injectDroplet(mouseRef.current.x, mouseRef.current.y, undefined, 0.8);
+                if (now - lastStreamTimeRef.current > 50) {
+                    lastStreamTimeRef.current = now;
+                    injectDroplet(mouseRef.current.x, mouseRef.current.y, undefined, 0.8, 32);
+                }
             }
 
             // 3. Stir tool (mouse vortex injection)
@@ -289,7 +296,7 @@ export const useInkSimulation = (
                 // Render particle with luminous soft radial dot
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius * (1 + lifeRatio * 0.8), 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${currentAlpha.toFixed(3)})`;
+                ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${(currentAlpha * 100 | 0) / 100})`;
                 ctx.fill();
             }
 

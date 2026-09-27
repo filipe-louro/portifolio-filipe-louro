@@ -10,10 +10,10 @@ import {
     Search,
     X,
     Dices,
-    Sparkles,
     Check,
 } from "lucide-react";
 import { LAB_ITEMS, EXPERIMENT_MAP, LabCategory, LAB_CATEGORIES } from "./lab-data";
+import { LabIcon } from "./lab-icon";
 
 export const Navbar = () => {
     const pathname = usePathname();
@@ -24,6 +24,7 @@ export const Navbar = () => {
     const [selectedCategory, setSelectedCategory] = useState<LabCategory>("all");
     const searchInputRef = useRef<HTMLInputElement>(null);
     const switcherRef = useRef<HTMLDivElement>(null);
+    const triggerBtnRef = useRef<HTMLButtonElement>(null);
 
     const pathSegments = pathname.split("/").filter(Boolean);
     const isPlayground = pathname.startsWith("/playground");
@@ -41,6 +42,7 @@ export const Navbar = () => {
             return (
                 lab.title.toLowerCase().includes(q) ||
                 lab.shortTitle.toLowerCase().includes(q) ||
+                lab.slug.toLowerCase().includes(q) ||
                 lab.description.toLowerCase().includes(q) ||
                 lab.tags.some((t) => t.toLowerCase().includes(q))
             );
@@ -66,7 +68,10 @@ export const Navbar = () => {
             }
         };
 
-        const handleClickOutside = (e: MouseEvent) => {
+        const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+            if (triggerBtnRef.current?.contains(e.target as Node)) {
+                return;
+            }
             if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
                 setIsSwitcherOpen(false);
             }
@@ -75,12 +80,14 @@ export const Navbar = () => {
         if (isSwitcherOpen) {
             document.addEventListener("keydown", handleKeyDown);
             document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside, { passive: true });
             setTimeout(() => searchInputRef.current?.focus(), 50);
         }
 
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
             document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
         };
     }, [isSwitcherOpen]);
 
@@ -109,6 +116,7 @@ export const Navbar = () => {
 
                     {/* Quick Switcher Trigger */}
                     <button
+                        ref={triggerBtnRef}
                         onClick={() => setIsSwitcherOpen((prev) => !prev)}
                         className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all text-xs font-bold ${
                             isSwitcherOpen
@@ -155,7 +163,12 @@ export const Navbar = () => {
             {/* Quick Switcher Drawer / Modal */}
             <AnimatePresence>
                 {isSwitcherOpen && (
-                    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-slate-950/60 backdrop-blur-md">
+                    <div
+                        className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-slate-950/60 backdrop-blur-md"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) setIsSwitcherOpen(false);
+                        }}
+                    >
                         <motion.div
                             ref={switcherRef}
                             initial={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -252,7 +265,7 @@ export const Navbar = () => {
                                                     <div
                                                         className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-white/10 ${lab.accentBg}`}
                                                     >
-                                                        <Sparkles size={14} className={lab.accentText} />
+                                                        <LabIcon name={lab.iconName} className={lab.accentText} size={15} />
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-2">

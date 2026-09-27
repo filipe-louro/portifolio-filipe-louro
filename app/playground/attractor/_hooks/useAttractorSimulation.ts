@@ -122,6 +122,11 @@ export const useAttractorSimulation = (
 
     const particlesRef = useRef<Particle3D[]>([]);
 
+    const MAX_P = 6000;
+    const BUCKETS = 8;
+    const bucketCountsRef = useRef<Int32Array>(new Int32Array(BUCKETS));
+    const bucketSegsRef = useRef<Float32Array>(new Float32Array(BUCKETS * MAX_P * 4));
+
     // 3D Orbit Camera angles
     const cameraRef = useRef({
         rotX: 0.35,
@@ -134,10 +139,6 @@ export const useAttractorSimulation = (
         lastMouseX: 0,
         lastMouseY: 0,
     });
-
-    useEffect(() => {
-        configRef.current = config;
-    }, [config]);
 
     const spawnParticle = useCallback((type: AttractorConfig['type']): Particle3D => {
         let x = (Math.random() - 0.5) * 2;
@@ -177,6 +178,15 @@ export const useAttractorSimulation = (
         }
         particlesRef.current = particles;
     }, [spawnParticle]);
+
+    const prevTypeRef = useRef(config.type);
+    useEffect(() => {
+        configRef.current = config;
+        if (prevTypeRef.current !== config.type) {
+            prevTypeRef.current = config.type;
+            initParticles(config.particleCount, config.type);
+        }
+    }, [config, initParticles]);
 
     // The Butterfly Effect: cluster all particles in a micro-sphere to watch exponential divergence
     const triggerButterflyBurst = useCallback(() => {
@@ -271,6 +281,10 @@ export const useAttractorSimulation = (
                 particles.splice(cfg.particleCount);
             }
 
+            const bucketCounts = bucketCountsRef.current;
+            const segs = bucketSegsRef.current;
+            bucketCounts.fill(0);
+
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
                 p.life++;
@@ -324,36 +338,52 @@ export const useAttractorSimulation = (
                 const sy = cy - y1 * scale * zFactor;
 
                 if (p.prevScreenX >= 0 && p.prevScreenY >= 0) {
-                    // Spectral coloring based on speed & scheme
-                    let strokeColor = '';
                     const speedNorm = Math.min(speed / 35, 1.0);
-
-                    if (cfg.colorScheme === 'aurora') {
-                        // Cyan to Purple to Emerald
-                        const hue = 160 + speedNorm * 140;
-                        strokeColor = `hsla(${hue}, 90%, 65%, 0.45)`;
-                    } else if (cfg.colorScheme === 'fire') {
-                        // Red to Gold to White
-                        const hue = speedNorm * 55;
-                        strokeColor = `hsla(${hue}, 100%, ${50 + speedNorm * 30}%, 0.45)`;
-                    } else if (cfg.colorScheme === 'cyber') {
-                        // Hot pink to electric cyan
-                        const hue = 300 - speedNorm * 120;
-                        strokeColor = `hsla(${hue}, 95%, 60%, 0.45)`;
-                    } else {
-                        // Electric blue
-                        strokeColor = `hsla(210, 100%, ${60 + speedNorm * 35}%, 0.45)`;
+                    const b = Math.min(BUCKETS - 1, (speedNorm * BUCKETS) | 0);
+                    const cnt = bucketCounts[b];
+                    if (cnt < MAX_P) {
+                        const base = (b * MAX_P + cnt) * 4;
+                        segs[base] = p.prevScreenX;
+                        segs[base + 1] = p.prevScreenY;
+                        segs[base + 2] = sx;
+                        segs[base + 3] = sy;
+                        bucketCounts[b] = cnt + 1;
                     }
-
-                    ctx.strokeStyle = strokeColor;
-                    ctx.beginPath();
-                    ctx.moveTo(p.prevScreenX, p.prevScreenY);
-                    ctx.lineTo(sx, sy);
-                    ctx.stroke();
                 }
 
                 p.prevScreenX = sx;
                 p.prevScreenY = sy;
+            }
+
+            // Batched draw calls by speed bucket (8 draw calls instead of 6,000!)
+            for (let b = 0; b < BUCKETS; b++) {
+                const count = bucketCounts[b];
+                if (count === 0) continue;
+                const speedNorm = (b + 0.5) / BUCKETS;
+                let strokeColor = '';
+
+                if (cfg.colorScheme === 'aurora') {
+                    const hue = 160 + speedNorm * 140;
+                    strokeColor = `hsla(${hue}, 90%, 65%, 0.45)`;
+                } else if (cfg.colorScheme === 'fire') {
+                    const hue = speedNorm * 55;
+                    strokeColor = `hsla(${hue}, 100%, ${50 + speedNorm * 30}%, 0.45)`;
+                } else if (cfg.colorScheme === 'cyber') {
+                    const hue = 300 - speedNorm * 120;
+                    strokeColor = `hsla(${hue}, 95%, 60%, 0.45)`;
+                } else {
+                    strokeColor = `hsla(210, 100%, ${60 + speedNorm * 35}%, 0.45)`;
+                }
+
+                ctx.strokeStyle = strokeColor;
+                ctx.beginPath();
+                const baseOffset = b * MAX_P * 4;
+                for (let k = 0; k < count; k++) {
+                    const idx = baseOffset + k * 4;
+                    ctx.moveTo(segs[idx], segs[idx + 1]);
+                    ctx.lineTo(segs[idx + 2], segs[idx + 3]);
+                }
+                ctx.stroke();
             }
 
             ctx.restore();

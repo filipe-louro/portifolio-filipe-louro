@@ -5,83 +5,15 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
-    Keyboard,
     ArrowRight,
-    Zap,
-    Mountain,
-    CircleDashed,
-    Atom,
-    Waves,
-    Disc,
-    Boxes,
-    Scissors,
-    Droplets,
-    Infinity,
-    Fingerprint,
-    Hourglass,
-    Network,
-    Magnet,
     Sparkles,
-    Radio,
-    Orbit,
-    Terminal,
     Search,
     X,
     Dices,
 } from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/spotlight-card';
 import { LAB_ITEMS, LAB_CATEGORIES, LabCategory } from './lab-data';
-
-// Helper icon resolver for laboratory items
-const renderLabIcon = (iconName: string, accentText: string) => {
-    const props = { size: 22, className: accentText };
-    switch (iconName) {
-        case 'Keyboard':
-            return <Keyboard {...props} />;
-        case 'Atom':
-            return <Atom {...props} className={`${accentText} animate-spin-slow`} />;
-        case 'CircleDashed':
-            return <CircleDashed {...props} className={`${accentText} animate-spin-slow`} />;
-        case 'Terminal':
-            return <Terminal {...props} />;
-        case 'Zap':
-            return <Zap {...props} />;
-        case 'Mountain':
-            return <Mountain {...props} />;
-        case 'Sparkles':
-            return <Sparkles {...props} />;
-        case 'Waves':
-            return <Waves {...props} />;
-        case 'Disc':
-            return <Disc {...props} />;
-        case 'Boxes':
-            return <Boxes {...props} />;
-        case 'Scissors':
-            return <Scissors {...props} />;
-        case 'Droplets':
-            return <Droplets {...props} />;
-        case 'Infinity':
-            return <Infinity {...props} />;
-        case 'Fingerprint':
-            return <Fingerprint {...props} />;
-        case 'Hourglass':
-            return <Hourglass {...props} />;
-        case 'Network':
-            return <Network {...props} />;
-        case 'Magnet':
-            return <Magnet {...props} />;
-        case 'Dye':
-            return <Droplets {...props} />;
-        case 'Orbit':
-            return <Orbit {...props} />;
-        case 'WaterWave':
-            return <Radio {...props} />;
-        case 'Galaxy':
-            return <Atom {...props} />;
-        default:
-            return <Sparkles {...props} />;
-    }
-};
+import { LabIcon } from './lab-icon';
 
 export const LabGrid = () => {
     const router = useRouter();
@@ -115,11 +47,13 @@ export const LabGrid = () => {
             if (!q) return true;
 
             const inTitle = lab.title.toLowerCase().includes(q);
+            const inShort = lab.shortTitle.toLowerCase().includes(q);
+            const inSlug = lab.slug.toLowerCase().includes(q);
             const inDesc = lab.description.toLowerCase().includes(q);
             const inTags = lab.tags.some((t) => t.toLowerCase().includes(q));
             const inCategory = lab.categoryLabel.toLowerCase().includes(q);
 
-            return inTitle || inDesc || inTags || inCategory;
+            return inTitle || inShort || inSlug || inDesc || inTags || inCategory;
         });
     }, [selectedCategory, searchQuery]);
 
@@ -294,7 +228,7 @@ export const LabGrid = () => {
                                                     <div
                                                         className={`w-11 h-11 rounded-xl flex items-center justify-center border border-white/10 ${lab.accentBg}`}
                                                     >
-                                                        {renderLabIcon(lab.iconName, lab.accentText)}
+                                                        <LabIcon name={lab.iconName} className={lab.accentText} size={22} />
                                                     </div>
                                                     <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded border border-white/10 bg-white/5 text-slate-400">
                                                         {lab.categoryLabel}
