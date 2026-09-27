@@ -1,213 +1,360 @@
 "use client";
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ReactNode } from 'react';
-import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom, Waves, Disc, Boxes, Scissors, Droplets, Infinity, Fingerprint, Hourglass, Network } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import {
+    Keyboard,
+    ArrowRight,
+    Zap,
+    Mountain,
+    CircleDashed,
+    Atom,
+    Waves,
+    Disc,
+    Boxes,
+    Scissors,
+    Droplets,
+    Infinity,
+    Fingerprint,
+    Hourglass,
+    Network,
+    Magnet,
+    Sparkles,
+    Radio,
+    Orbit,
+    Terminal,
+    Search,
+    X,
+    Dices,
+} from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/spotlight-card';
+import { LAB_ITEMS, LAB_CATEGORIES, LabCategory } from './lab-data';
 
-interface LabCard {
-    slug: string;
-    title: string;
-    description: string;
-    action: string;
-    icon: ReactNode;
-    accentText: string;
-    accentBorder: string;
-}
-
-const LABS: LabCard[] = [
-    {
-        slug: 'keyboard',
-        title: 'RGB Keyboard Engine',
-        description: 'Teclado interativo 3D com efeitos de iluminação procedurais e resposta ao toque.',
-        action: 'Testar Componente',
-        icon: <Keyboard size={24} />,
-        accentText: 'text-cyan-400',
-        accentBorder: 'hover:border-cyan-500/50',
-    },
-    {
-        slug: 'orbit',
-        title: 'Orbital Field Simulator',
-        description: 'Simulador de partículas interativo com campos gravitacionais e eletromagnéticos.',
-        action: 'Iniciar Simulação',
-        icon: <Atom size={24} className="animate-spin-slow" />,
-        accentText: 'text-blue-400',
-        accentBorder: 'hover:border-blue-500/50',
-    },
-    {
-        slug: 'blackhole',
-        title: 'Interstellar Gargantua',
-        description: 'Simulação física de um buraco negro utilizando Raymarching e WebGL 2.0.',
-        action: 'Entrar no Horizonte',
-        icon: <CircleDashed size={24} className="animate-spin-slow" />,
-        accentText: 'text-orange-400',
-        accentBorder: 'hover:border-orange-500/50',
-    },
-    {
-        slug: 'matrix',
-        title: 'Matrix Digital Rain',
-        description: 'Chuva de códigos procedurais com efeito de profundidade 3D (Parallax) e renderização otimizada.',
-        action: 'Hack the Mainframe',
-        icon: <span className="font-mono text-xl font-bold">ｵ</span>,
-        accentText: 'text-green-400',
-        accentBorder: 'hover:border-green-500/50',
-    },
-    {
-        slug: 'explosion',
-        title: 'Particle Text Physics',
-        description: 'Manipulação de pixels via Canvas API com física de repulsão e reconstrução em tempo real.',
-        action: 'Testar Componente',
-        icon: <Zap size={24} />,
-        accentText: 'text-yellow-400',
-        accentBorder: 'hover:border-yellow-500/50',
-    },
-    {
-        slug: 'vaporwave',
-        title: 'Retro Vaporwave',
-        description: 'Cena procedural "Outrun" dos anos 80 renderizada puramente em Canvas 2D sem assets de imagem.',
-        action: 'Testar Componente',
-        icon: <Mountain size={24} />,
-        accentText: 'text-fuchsia-400',
-        accentBorder: 'hover:border-fuchsia-500/50',
-    },
-    {
-        slug: 'neon',
-        title: 'Neon Sign Generator',
-        description: 'Gerador de letreiros neon realista com efeitos de luz CSS3 e simulação de eletricidade.',
-        action: 'Customizar Placa',
-        icon: <span className="font-bold text-lg border-2 border-pink-400 rounded px-1">Ne</span>,
-        accentText: 'text-pink-400',
-        accentBorder: 'hover:border-pink-500/50',
-    },
-    {
-        slug: 'fluid',
-        title: 'Fluid Simulation',
-        description: 'Simulação de fluidos em tempo real utilizando GPU, com interação física através do mouse e controles de viscosidade, pressão e vorticidade.',
-        action: 'Perturbar o Fluido',
-        icon: <Waves size={24} />,
-        accentText: 'text-teal-400',
-        accentBorder: 'hover:border-teal-500/50',
-    },
-    {
-        slug: 'chladni',
-        title: 'Chladni Resonance Patterns',
-        description: 'Simulação acústica de placas ressonantes em Canvas 2D com nós harmônicos e síntese sonora de frequências.',
-        action: 'Excitar a Placa',
-        icon: <Disc size={24} />,
-        accentText: 'text-amber-400',
-        accentBorder: 'hover:border-amber-500/50',
-    },
-    {
-        slug: 'mandelbulb',
-        title: 'Raymarched 3D Mandelbulb',
-        description: 'Raymarching volumétrico em WebGL 2.0 de fractal 3D hiperdimensional com órbita e iluminação por estimativa de distância.',
-        action: 'Explorar Fractal',
-        icon: <Boxes size={24} />,
-        accentText: 'text-violet-400',
-        accentBorder: 'hover:border-violet-500/50',
-    },
-    {
-        slug: 'cloth',
-        title: 'Verlet Cloth Simulation',
-        description: 'Física têxtil interativa em Canvas 2D com integração Verlet, arrasto elástico, vento e corte dinâmico de conexões.',
-        action: 'Manipular Tecido',
-        icon: <Scissors size={24} />,
-        accentText: 'text-rose-400',
-        accentBorder: 'hover:border-rose-500/50',
-    },
-    {
-        slug: 'jelly',
-        title: 'Soft-Body Jelly Physics',
-        description: 'Mecânica dos corpos deformáveis com conservação de volume, pressão hidrostática, deformação elástica e resposta tátil.',
-        action: 'Apertar Gelatina',
-        icon: <Droplets size={24} />,
-        accentText: 'text-emerald-400',
-        accentBorder: 'hover:border-emerald-500/50',
-    },
-    {
-        slug: 'pendulum',
-        title: 'Chaotic Double Pendulum',
-        description: 'Dinâmica caótica hamiltoniana integrada com Runge-Kutta de 4ª ordem, divergência de Lyapunov e rastros fosforescentes.',
-        action: 'Liberar Pêndulo',
-        icon: <Infinity size={24} />,
-        accentText: 'text-sky-400',
-        accentBorder: 'hover:border-sky-500/50',
-    },
-    {
-        slug: 'morphogenesis',
-        title: 'Reaction-Diffusion Morphogenesis',
-        description: 'Equações de Alan Turing e sistema Gray-Scott para geração de peles orgânicas, mitose celular, corais e labirintos químicos.',
-        action: 'Semear Reação',
-        icon: <Fingerprint size={24} />,
-        accentText: 'text-purple-400',
-        accentBorder: 'hover:border-purple-500/50',
-    },
-    {
-        slug: 'sandpile',
-        title: 'Abelian Sandpile & Avalanches',
-        description: 'Auto-organização crítica e física granular em tempo real: cascatas de avalanches em leis de potência, dunas de areia e fractais abelianos.',
-        action: 'Despejar Areia',
-        icon: <Hourglass size={24} />,
-        accentText: 'text-amber-300',
-        accentBorder: 'hover:border-amber-400/50',
-    },
-    {
-        slug: 'physarum',
-        title: 'Physarum Transport Network',
-        description: 'Bio-mimetismo de fungos amebóides inteligentes: agentes quimiotáticos gerando redes biológicas de transporte e auto-organização tubular.',
-        action: 'Alimentar Fungo',
-        icon: <Network size={24} />,
-        accentText: 'text-lime-400',
-        accentBorder: 'hover:border-lime-500/50',
-    },
-];
+// Helper icon resolver for laboratory items
+const renderLabIcon = (iconName: string, accentText: string) => {
+    const props = { size: 22, className: accentText };
+    switch (iconName) {
+        case 'Keyboard':
+            return <Keyboard {...props} />;
+        case 'Atom':
+            return <Atom {...props} className={`${accentText} animate-spin-slow`} />;
+        case 'CircleDashed':
+            return <CircleDashed {...props} className={`${accentText} animate-spin-slow`} />;
+        case 'Terminal':
+            return <Terminal {...props} />;
+        case 'Zap':
+            return <Zap {...props} />;
+        case 'Mountain':
+            return <Mountain {...props} />;
+        case 'Sparkles':
+            return <Sparkles {...props} />;
+        case 'Waves':
+            return <Waves {...props} />;
+        case 'Disc':
+            return <Disc {...props} />;
+        case 'Boxes':
+            return <Boxes {...props} />;
+        case 'Scissors':
+            return <Scissors {...props} />;
+        case 'Droplets':
+            return <Droplets {...props} />;
+        case 'Infinity':
+            return <Infinity {...props} />;
+        case 'Fingerprint':
+            return <Fingerprint {...props} />;
+        case 'Hourglass':
+            return <Hourglass {...props} />;
+        case 'Network':
+            return <Network {...props} />;
+        case 'Magnet':
+            return <Magnet {...props} />;
+        case 'Dye':
+            return <Droplets {...props} />;
+        case 'Orbit':
+            return <Orbit {...props} />;
+        case 'WaterWave':
+            return <Radio {...props} />;
+        case 'Galaxy':
+            return <Atom {...props} />;
+        default:
+            return <Sparkles {...props} />;
+    }
+};
 
 export const LabGrid = () => {
+    const router = useRouter();
+    const [selectedCategory, setSelectedCategory] = useState<LabCategory>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Keyboard shortcut '/' to focus search input
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === '/' && document.activeElement !== searchInputRef.current) {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            } else if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+                searchInputRef.current?.blur();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    // Filtered labs computation
+    const filteredLabs = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        return LAB_ITEMS.filter((lab) => {
+            const matchesCategory =
+                selectedCategory === 'all' || lab.category === selectedCategory;
+
+            if (!matchesCategory) return false;
+            if (!q) return true;
+
+            const inTitle = lab.title.toLowerCase().includes(q);
+            const inDesc = lab.description.toLowerCase().includes(q);
+            const inTags = lab.tags.some((t) => t.toLowerCase().includes(q));
+            const inCategory = lab.categoryLabel.toLowerCase().includes(q);
+
+            return inTitle || inDesc || inTags || inCategory;
+        });
+    }, [selectedCategory, searchQuery]);
+
+    // Random lab chooser
+    const handleSurpriseMe = () => {
+        const randomIndex = Math.floor(Math.random() * LAB_ITEMS.length);
+        const randomLab = LAB_ITEMS[randomIndex];
+        router.push(`/playground/${randomLab.slug}`);
+    };
+
     return (
         <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-violet-500/30 font-sans relative overflow-hidden">
-            <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
-            <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] pointer-events-none" />
+            {/* Ambient Background Glows */}
+            <div className="fixed top-[-10%] left-[-10%] w-[550px] h-[550px] bg-violet-600/15 rounded-full blur-[140px] pointer-events-none" />
+            <div className="fixed bottom-[-10%] right-[-10%] w-[550px] h-[550px] bg-cyan-600/15 rounded-full blur-[140px] pointer-events-none" />
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-blue-600/5 rounded-full blur-[160px] pointer-events-none" />
 
-            <div className="fixed top-1/4 left-10 w-24 h-24 border border-white/5 rounded-2xl rotate-12 backdrop-blur-sm pointer-events-none" />
+            <div className="relative z-10 pt-24 px-4 sm:px-6 max-w-7xl mx-auto pb-24">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
+                                <Sparkles size={12} />
+                                21 Experimentos Ativos
+                            </span>
+                            <span className="text-slate-500 text-xs font-mono">HUD 14.1 Standard</span>
+                        </div>
+                        <motion.h1
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight"
+                        >
+                            Laboratório Criativo
+                        </motion.h1>
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-slate-400 max-w-2xl mt-2 text-sm sm:text-base leading-relaxed"
+                        >
+                            Física newtoniana e relativística, dinâmica de fluidos, autômatos celulares, manifolds caóticos e síntese de áudio puramente em Canvas 2D e WebGL 2.0.
+                        </motion.p>
+                    </div>
 
-            <div className="relative z-10 pt-24 px-6 max-w-6xl mx-auto pb-20">
-                <motion.h1
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl font-bold text-white mb-3"
-                >
-                    Lab & Playground
-                </motion.h1>
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.15 }}
-                    className="text-slate-400 max-w-2xl mb-10"
-                >
-                    Experiências visuais interativas construídas à mão com Canvas 2D e WebGL 2.0 — sem engines, sem assets, só código.
-                </motion.p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {LABS.map((lab) => (
-                        <Link key={lab.slug} href={`/playground/${lab.slug}`}>
-                            <SpotlightCard className={`h-64 p-6 flex flex-col justify-between ${lab.accentBorder} transition-colors cursor-pointer bg-slate-900/50 backdrop-blur-sm`}>
-                                <div>
-                                    <div className={`bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${lab.accentText}`}>
-                                        {lab.icon}
-                                    </div>
-                                    <h2 className="text-xl font-bold text-white mb-2">{lab.title}</h2>
-                                    <p className="text-slate-400 text-sm">
-                                        {lab.description}
-                                    </p>
-                                </div>
-                                <div className={`flex items-center ${lab.accentText} text-sm font-medium mt-4`}>
-                                    {lab.action} <ArrowRight size={16} className="ml-2" />
-                                </div>
-                            </SpotlightCard>
-                        </Link>
-                    ))}
+                    {/* Surpreenda-me Button */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.15 }}
+                        className="flex items-center gap-3 shrink-0"
+                    >
+                        <button
+                            onClick={handleSurpriseMe}
+                            aria-label="Abrir um experimento aleatório"
+                            className="group flex items-center gap-2 px-4 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-violet-200 text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-violet-950/30 active:scale-95"
+                        >
+                            <Dices size={16} className="text-violet-400 group-hover:rotate-180 transition-transform duration-500" />
+                            <span>Surpreenda-me</span>
+                        </button>
+                    </motion.div>
                 </div>
+
+                {/* Filter & Search Bar */}
+                <div className="mb-8 space-y-4">
+                    {/* Search Input */}
+                    <div className="relative max-w-xl">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <Search size={16} />
+                        </div>
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder="Buscar por nome, física ou tecnologia (ex: WebGL, RK4, Vórtices)..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-20 py-2.5 bg-slate-900/70 backdrop-blur-md border border-white/10 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-sans"
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1.5">
+                            {searchQuery ? (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors"
+                                    aria-label="Limpar busca"
+                                >
+                                    <X size={14} />
+                                </button>
+                            ) : (
+                                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-white/5 border border-white/10 rounded">
+                                    /
+                                </kbd>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Category Filter Tabs */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                        {LAB_CATEGORIES.map((cat) => {
+                            const isSelected = selectedCategory === cat.id;
+                            const count =
+                                cat.id === 'all'
+                                    ? LAB_ITEMS.length
+                                    : LAB_ITEMS.filter((item) => item.category === cat.id).length;
+
+                            return (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedCategory(cat.id)}
+                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 border ${
+                                        isSelected
+                                            ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-200 shadow-sm shadow-cyan-900/20'
+                                            : 'bg-slate-900/40 border-white/5 text-slate-400 hover:text-white hover:bg-slate-900/70 hover:border-white/10'
+                                    }`}
+                                >
+                                    <span>{cat.label}</span>
+                                    <span
+                                        className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                                            isSelected
+                                                ? 'bg-cyan-400/20 text-cyan-200'
+                                                : 'bg-white/5 text-slate-500'
+                                        }`}
+                                    >
+                                        {count}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Result Counter & Search Status */}
+                    <div className="flex items-center justify-between text-xs text-slate-400 font-mono pt-1">
+                        <span>
+                            Exibindo {filteredLabs.length} de {LAB_ITEMS.length} experimentos
+                        </span>
+                        {(searchQuery || selectedCategory !== 'all') && (
+                            <button
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setSelectedCategory('all');
+                                }}
+                                className="text-cyan-400 hover:underline flex items-center gap-1"
+                            >
+                                <X size={12} /> Limpar filtros
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Experiments Grid */}
+                {filteredLabs.length > 0 ? (
+                    <motion.div
+                        layout
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+                    >
+                        <AnimatePresence mode="popLayout">
+                            {filteredLabs.map((lab) => (
+                                <motion.div
+                                    key={lab.slug}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Link href={`/playground/${lab.slug}`}>
+                                        <SpotlightCard
+                                            className={`h-72 p-6 flex flex-col justify-between ${lab.accentBorder} transition-all duration-300 cursor-pointer bg-slate-900/60 backdrop-blur-md hover:bg-slate-900/80 shadow-lg hover:shadow-2xl hover:-translate-y-1`}
+                                        >
+                                            <div>
+                                                {/* Card Header: Icon & Category */}
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div
+                                                        className={`w-11 h-11 rounded-xl flex items-center justify-center border border-white/10 ${lab.accentBg}`}
+                                                    >
+                                                        {renderLabIcon(lab.iconName, lab.accentText)}
+                                                    </div>
+                                                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded border border-white/10 bg-white/5 text-slate-400">
+                                                        {lab.categoryLabel}
+                                                    </span>
+                                                </div>
+
+                                                {/* Title & Description */}
+                                                <h2 className="text-lg font-bold text-white mb-1.5 group-hover:text-cyan-300 transition-colors">
+                                                    {lab.title}
+                                                </h2>
+                                                <p className="text-slate-400 text-xs line-clamp-3 leading-relaxed">
+                                                    {lab.description}
+                                                </p>
+                                            </div>
+
+                                            {/* Bottom Badges & Action */}
+                                            <div className="mt-4 pt-3 border-t border-white/5">
+                                                {/* Tech Badges */}
+                                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                                    {lab.tags.map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-slate-300"
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+
+                                                {/* Action Link */}
+                                                <div className={`flex items-center ${lab.accentText} text-xs font-bold uppercase tracking-wider`}>
+                                                    <span>{lab.action}</span>
+                                                    <ArrowRight size={14} className="ml-1.5 group-hover:translate-x-1 transition-transform" />
+                                                </div>
+                                            </div>
+                                        </SpotlightCard>
+                                    </Link>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
+                ) : (
+                    /* Empty State */
+                    <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl bg-slate-900/30 backdrop-blur-sm">
+                        <Search size={36} className="mx-auto text-slate-500 mb-3" />
+                        <h3 className="text-lg font-bold text-white mb-1">Nenhum experimento encontrado</h3>
+                        <p className="text-slate-400 text-xs max-w-sm mx-auto mb-4">
+                            Não encontramos nenhum experimento correspondente à sua busca por &quot;{searchQuery}&quot;.
+                        </p>
+                        <button
+                            onClick={() => {
+                                setSearchQuery('');
+                                setSelectedCategory('all');
+                            }}
+                            className="px-4 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold uppercase tracking-wider transition-all"
+                        >
+                            Limpar filtros
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
