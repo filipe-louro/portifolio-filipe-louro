@@ -16,6 +16,11 @@ const EXPERIMENT_NAMES: Record<string, string> = {
     chladni: "Chladni Patterns",
     mandelbulb: "Mandelbulb 3D",
     cloth: "Verlet Cloth",
+    jelly: "Soft Jelly",
+    pendulum: "Chaos Pendulum",
+    morphogenesis: "Morphogenesis",
+    sandpile: "Critical Sandpile",
+    physarum: "Physarum Network",
 };
 
 export const Navbar = () => {

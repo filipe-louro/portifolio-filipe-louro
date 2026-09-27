@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
-import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom, Waves, Disc, Boxes, Scissors } from 'lucide-react';
+import { Keyboard, ArrowRight, Zap, Mountain, CircleDashed, Atom, Waves, Disc, Boxes, Scissors, Droplets, Infinity, Fingerprint, Hourglass, Network } from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/spotlight-card';
 
 interface LabCard {
@@ -115,6 +115,51 @@ const LABS: LabCard[] = [
         icon: <Scissors size={24} />,
         accentText: 'text-rose-400',
         accentBorder: 'hover:border-rose-500/50',
+    },
+    {
+        slug: 'jelly',
+        title: 'Soft-Body Jelly Physics',
+        description: 'Mecânica dos corpos deformáveis com conservação de volume, pressão hidrostática, deformação elástica e resposta tátil.',
+        action: 'Apertar Gelatina',
+        icon: <Droplets size={24} />,
+        accentText: 'text-emerald-400',
+        accentBorder: 'hover:border-emerald-500/50',
+    },
+    {
+        slug: 'pendulum',
+        title: 'Chaotic Double Pendulum',
+        description: 'Dinâmica caótica hamiltoniana integrada com Runge-Kutta de 4ª ordem, divergência de Lyapunov e rastros fosforescentes.',
+        action: 'Liberar Pêndulo',
+        icon: <Infinity size={24} />,
+        accentText: 'text-sky-400',
+        accentBorder: 'hover:border-sky-500/50',
+    },
+    {
+        slug: 'morphogenesis',
+        title: 'Reaction-Diffusion Morphogenesis',
+        description: 'Equações de Alan Turing e sistema Gray-Scott para geração de peles orgânicas, mitose celular, corais e labirintos químicos.',
+        action: 'Semear Reação',
+        icon: <Fingerprint size={24} />,
+        accentText: 'text-purple-400',
+        accentBorder: 'hover:border-purple-500/50',
+    },
+    {
+        slug: 'sandpile',
+        title: 'Abelian Sandpile & Avalanches',
+        description: 'Auto-organização crítica e física granular em tempo real: cascatas de avalanches em leis de potência, dunas de areia e fractais abelianos.',
+        action: 'Despejar Areia',
+        icon: <Hourglass size={24} />,
+        accentText: 'text-amber-300',
+        accentBorder: 'hover:border-amber-400/50',
+    },
+    {
+        slug: 'physarum',
+        title: 'Physarum Transport Network',
+        description: 'Bio-mimetismo de fungos amebóides inteligentes: agentes quimiotáticos gerando redes biológicas de transporte e auto-organização tubular.',
+        action: 'Alimentar Fungo',
+        icon: <Network size={24} />,
+        accentText: 'text-lime-400',
+        accentBorder: 'hover:border-lime-500/50',
     },
 ];
 
